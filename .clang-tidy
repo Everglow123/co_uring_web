@@ -1,0 +1,1 @@
+Checks: '-system-headers,-header-filter=.*,llvm-*,modernize-*,-modernize-avoid-c-arrays,-modernize-use-trailing-return-type,-concurrency-*'
