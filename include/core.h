@@ -21,13 +21,16 @@
 #include <memory>
 #include <thread>
 #include <type_traits>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "lockfree_queue.h"
 #include "logger.h"
+#include "timer.h"
 namespace co_uring_web::core {
 static constexpr uint32_t BufferSize = 1024;
-enum class IoRequestOp : int { OP_READ, OP_WRITE };
+enum class IoRequestOp : int { OP_READ, OP_WRITE, OP_CONNECT };
 struct IoRequest {
 	char *data {nullptr};
 	uint32_t capicaty {0};
@@ -36,6 +39,7 @@ struct IoRequest {
 	int32_t retCode {0};
 	void *context {nullptr};
 	IoRequestOp op;
+	int timeout {0};
 };
 static inline int setNonblocking(int fd) {
 	int oldOption = fcntl(fd, F_GETFL);  // NOLINT
@@ -50,10 +54,14 @@ struct TcpConnection {
 };
 
 class EpollScheduler {
+	uint64_t ioIndex_ {0};
+	std::unordered_map<uint64_t, void *> ioIndex2req_;
 	int epollfd_;
 	// std::vector<IoRequest *> uncompletedReqs;
 	std::vector<void *> completedHandleAddrs_;
 	static constexpr uint32_t EpollTimeoutMiliseconds = 1;  //超时设置成1毫秒
+	TimerQueue timerQueue_;
+
    public:
 	void handleWrite(IoRequest &req);
 	void handleRead(IoRequest &req);
@@ -62,13 +70,24 @@ class EpollScheduler {
 	EpollScheduler(const EpollScheduler &) = delete;
 	EpollScheduler(EpollScheduler &&) = default;
 	EpollScheduler &operator=(const EpollScheduler &) = delete;
-	EpollScheduler &operator=(EpollScheduler &&) = default;
+	EpollScheduler &operator=(EpollScheduler &&other) {
+		if(&other==this)return *this;
+		ioIndex_=other.ioIndex_;
+		ioIndex2req_.swap(other.ioIndex2req_);
+		epollfd_=other.epollfd_;
+		completedHandleAddrs_.swap(other.completedHandleAddrs_);
+		timerQueue_=std::move(other.timerQueue_);
+		return *this;
+	};
 };
 
 class UringScheduler {
+	uint64_t ioIndex_ {0};
+	std::unordered_map<uint64_t, void *> ioIndex2req_;
 	static constexpr uint32_t UringSize = 256;              // io_uring队列深度
 	static constexpr uint32_t UringTimeoutMiliseconds = 1;  //超时设置成1毫秒
 	io_uring uring_;
+	TimerQueue timerQueue_;
 
    public:
 	void handleWrite(IoRequest &req);
@@ -78,20 +97,36 @@ class UringScheduler {
 	UringScheduler(const UringScheduler &) = delete;
 	UringScheduler(UringScheduler &&) = default;
 	UringScheduler &operator=(const UringScheduler &) = delete;
-	UringScheduler &operator=(UringScheduler &&) = default;
+	UringScheduler &operator=(UringScheduler &&other){
+		if(this==&other)[[unlikely]]return *this;
+		ioIndex_=other.ioIndex_;
+		ioIndex2req_.swap(other.ioIndex2req_);
+		uring_=other.uring_;
+		timerQueue_=std::move(other.timerQueue_);
+		return *this;
+	};
 };
 
 template <class SchdulerImpl>
 class ScheduleImpl_SFINAE {
    public:
-	static constexpr bool has_func_handle_write =
-	    std::is_member_function_pointer<decltype(&SchdulerImpl::handleWrite)>::value;
-	static constexpr bool has_func_handle_read =
-	    std::is_member_function_pointer<decltype(&SchdulerImpl::handleRead)>::value;
+	static constexpr bool check_func_handle_write =
+	    std::is_member_function_pointer<decltype(&SchdulerImpl::handleWrite)>::value &&
+	    std::is_same<decltype(std::declval<SchdulerImpl>().handleWrite(
+	                     std::declval<IoRequest &>())),
+	                 void>::value;
+	static constexpr bool check_func_handle_read =
+	    std::is_member_function_pointer<decltype(&SchdulerImpl::handleRead)>::value &&
+	    std::is_same<decltype(std::declval<SchdulerImpl>().handleRead(std::declval<IoRequest &>())),
+	                 void>::value;
+	static constexpr bool check_func_poll =
+	    std::is_member_function_pointer<decltype(&SchdulerImpl::poll)>::value &&
+	    std::is_same<decltype(std::declval<SchdulerImpl>().poll(
+	                     std::declval<std::vector<void *> &>())),
+	                 void>::value;
 	;
-	static constexpr bool has_func_poll =
-	    std::is_member_function_pointer<decltype(&SchdulerImpl::poll)>::value;
-	static constexpr bool value = has_func_handle_write && has_func_handle_read && has_func_poll;
+	static constexpr bool value =
+	    check_func_handle_write && check_func_handle_read && check_func_poll;
 };
 
 template <class SchedulerImpl, class TaskImpl,
@@ -110,6 +145,7 @@ class Scheduler<SchedulerImpl, TaskImpl, true> {
 	Scheduler(LockfreeQueue<TcpConnection> *queue, CoroFunc func) : queue_(queue), func_(func) {}
 	struct AsyncWrite {
 		IoRequest *req;
+
 		Scheduler<SchedulerImpl, TaskImpl, true> *scheduler;
 		inline bool await_ready() noexcept { return false; }
 		inline void
@@ -123,6 +159,7 @@ class Scheduler<SchedulerImpl, TaskImpl, true> {
 	struct AsyncRead {
 		IoRequest *req;
 		Scheduler<SchedulerImpl, TaskImpl, true> *scheduler;
+
 		inline bool await_ready() noexcept { return false; }
 		inline void
 		await_suspend(std::experimental::coroutine_handle<typename TaskImpl::promise_type> h) {
@@ -160,13 +197,13 @@ class Scheduler<SchedulerImpl, TaskImpl, true> {
 };
 template <class SchedulerImpl, class TaskImpl>
 class TcpServer {
-	int port_;
-	int sock_;
+	int port_;  //端口
+	int sock_;  // socket fd
 	using CoroFunc = TaskImpl (*)(TcpConnection, Scheduler<SchedulerImpl, TaskImpl> *);
-	CoroFunc func_;
+	CoroFunc func_;  //协程执行函数
 	static constexpr int defaultThreadCount = 4;
-	LockfreeQueue<TcpConnection> *queues_;
-	std::thread *threads_;
+	LockfreeQueue<TcpConnection> *queues_;  //用于传递主线程accept的tcp连接到工作线程
+	std::thread *threads_;                  //工作线程
 	int thread_count_;
 
    public:
@@ -208,6 +245,7 @@ class TcpServer {
 			new (queues_ + i) LockfreeQueue<TcpConnection>();
 		}
 		threads_ = (std::thread *)malloc(thread_count * sizeof(std::thread));
+		//必须要在把queues_和threads_写入内存之后才能启动新线程，确保可见性
 		asm volatile("mfence" ::: "memory");
 		for (int i = 0; i < thread_count; ++i) {
 			new (threads_ + i) std::thread(
@@ -222,12 +260,13 @@ class TcpServer {
 	void run() {
 		uint64_t index = 0;
 		while (true) {
-			
 			TcpConnection tcpConn = {0};
 			socklen_t len = sizeof(tcpConn.remoteAddr);
+			//主线程始终监听socket并接受新连接。
 			tcpConn.fd = ::accept(sock_, (sockaddr *)&(tcpConn.remoteAddr), &len);  // NOLINT
 
 			while (!(queues_[index % thread_count_].push(tcpConn))) {
+				//不成功的话，说明已经满了
 				index += 1;
 			};
 			index++;

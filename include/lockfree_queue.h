@@ -23,7 +23,7 @@ class LockfreeQueue;
 template <class T>
 class LockfreeQueue<T, false> {};
 /**
- * @brief 单生产者单消费者队列，只支持pod类型的元素
+ * @brief 单生产者队列，只支持pod类型的元素
  *
  * @tparam T
  */
@@ -34,7 +34,7 @@ class LockfreeQueue<T, true> {
 	uint32_t capicity_;
 	T *queue_;
 	static constexpr uint32_t DefaultCapicity = 1024;
-	char padding[64];//防止伪共享
+	char padding[64];  //填充缓存行，防止伪共享
 
    public:
 	inline uint32_t count2Index(uint32_t count) { return count % capicity_; };
@@ -56,10 +56,13 @@ class LockfreeQueue<T, true> {
 		do {
 			currentReadIndex = readIndex_.load();
 			if (count2Index(readIndex_.load()) == count2Index(writeIndex_.load())) {
+				//说明已经空了
 				return false;
 			}
 			data = queue_[count2Index(currentReadIndex)];
 			if (readIndex_.compare_exchange_strong(currentReadIndex, currentReadIndex + 1)) {
+				//假定有多个消费者，如果这个cas操作成功，那就意味着，data处必定为currentReadIndex处的数据，失败就意味着，已经被其他
+				//消费者先获取。所以currentReadIndex处的数据可能被多个线程读取，所以元素类型的赋值过程绝不能影响源数据。
 				return true;
 			}
 		} while (true);

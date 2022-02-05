@@ -1,0 +1,705 @@
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+==================
+WARNING: ThreadSanitizer: data race (pid=46805)
+  Read of size 4 at 0x000000526fe8 by thread T3:
+    #0 std::__1::basic_ostream<char, std::__1::char_traits<char> >& std::__1::__put_character_sequence<char, std::__1::char_traits<char> >(std::__1::basic_ostream<char, std::__1::char_traits<char> >&, char const*, unsigned long) <null> (co_uring_http+0x4cb090)
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) <null> (co_uring_http+0x4c9e8d)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8ac)
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 4 at 0x000000526fe8 by thread T4:
+    #0 std::__1::basic_ostream<char, std::__1::char_traits<char> >& std::__1::__put_character_sequence<char, std::__1::char_traits<char> >(std::__1::basic_ostream<char, std::__1::char_traits<char> >&, char const*, unsigned long) <null> (co_uring_http+0x4cb0fd)
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) <null> (co_uring_http+0x4c9e8d)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8ac)
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Location is global 'std::__1::cout' of size 160 at 0x000000526f50 (co_uring_http+0x000000526fe8)
+
+  Thread T3 (tid=46810, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+  Thread T4 (tid=46811, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: data race (/home/zhouheng/C++/co_uring_http/build/co_uring_http+0x4cb090) in std::__1::basic_ostream<char, std::__1::char_traits<char> >& std::__1::__put_character_sequence<char, std::__1::char_traits<char> >(std::__1::basic_ostream<char, std::__1::char_traits<char> >&, char const*, unsigned long)
+==================
+127.0.0.1
+==================
+WARNING: ThreadSanitizer: data race (pid=46805)
+  Read of size 8 at 0x000000526f70 by thread T5:
+    #0 std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> > std::__1::__pad_and_output<char, std::__1::char_traits<char> >(std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> >, char const*, char const*, char const*, std::__1::ios_base&, char) <null> (co_uring_http+0x4cb25a)
+    #1 std::__1::basic_ostream<char, std::__1::char_traits<char> >& std::__1::__put_character_sequence<char, std::__1::char_traits<char> >(std::__1::basic_ostream<char, std::__1::char_traits<char> >&, char const*, unsigned long) <null> (co_uring_http+0x4cb129)
+    #2 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) <null> (co_uring_http+0x4c9e8d)
+    #3 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8ac)
+    #4 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x000000526f70 by thread T4:
+    #0 std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> > std::__1::__pad_and_output<char, std::__1::char_traits<char> >(std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> >, char const*, char const*, char const*, std::__1::ios_base&, char) <null> (co_uring_http+0x4cb366)
+    #1 std::__1::basic_ostream<char, std::__1::char_traits<char> >& std::__1::__put_character_sequence<char, std::__1::char_traits<char> >(std::__1::basic_ostream<char, std::__1::char_traits<char> >&, char const*, unsigned long) <null> (co_uring_http+0x4cb129)
+    #2 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) <null> (co_uring_http+0x4c9e8d)
+    #3 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8ac)
+    #4 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Location is global 'std::__1::cout' of size 160 at 0x000000526f50 (co_uring_http+0x000000526f70)
+
+  Thread T5 (tid=46812, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+  Thread T4 (tid=46811, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: data race (/home/zhouheng/C++/co_uring_http/build/co_uring_http+0x4cb25a) in std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> > std::__1::__pad_and_output<char, std::__1::char_traits<char> >(std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> >, char const*, char const*, char const*, std::__1::ios_base&, char)
+==================
+127.0.0.1
+127.0.0.1
+127.0.0.1127.0.0.1
+
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1127.0.0.1
+
+127.0.0.1
+127.0.0.1
+127.0.0.1127.0.0.1
+
+127.0.0.1
+127.0.0.1127.0.0.1
+
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1127.0.0.1
+
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1127.0.0.1
+
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+==================
+WARNING: ThreadSanitizer: heap-use-after-free (pid=46805)
+  Write of size 4 at 0x7b1c0000a89c by thread T5:
+    #0 co_uring_web::core::UringScheduler::poll(std::__1::vector<void*, std::__1::allocator<void*> >&) <null> (co_uring_http+0x4ceeee)
+    #1 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8bb)
+    #2 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x7b1c0000a898 by thread T5:
+    #0 operator delete(void*) <null> (co_uring_http+0x4c9450)
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca688)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Thread T5 (tid=46812, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: heap-use-after-free (/home/zhouheng/C++/co_uring_http/build/co_uring_http+0x4ceeee) in co_uring_web::core::UringScheduler::poll(std::__1::vector<void*, std::__1::allocator<void*> >&)
+==================
+==================
+WARNING: ThreadSanitizer: heap-use-after-free (pid=46805)
+  Read of size 8 at 0x7b1c00007030 by thread T3:
+    #0 co_uring_web::core::UringScheduler::poll(std::__1::vector<void*, std::__1::allocator<void*> >&) <null> (co_uring_http+0x4ceefa)
+    #1 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8bb)
+    #2 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x7b1c00007030 by thread T3:
+    #0 operator delete(void*) <null> (co_uring_http+0x4c9450)
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca688)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Thread T3 (tid=46810, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: heap-use-after-free (/home/zhouheng/C++/co_uring_http/build/co_uring_http+0x4ceefa) in co_uring_web::core::UringScheduler::poll(std::__1::vector<void*, std::__1::allocator<void*> >&)
+==================
+==================
+WARNING: ThreadSanitizer: heap-use-after-free (pid=46805)
+  Read of size 1 at 0x7b1c000103f1 by thread T2:
+    #0 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca3ae)
+    #1 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #2 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x7b1c000103f0 by thread T2:
+    #0 operator delete(void*) <null> (co_uring_http+0x4c9450)
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca688)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Thread T2 (tid=46809, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: heap-use-after-free main.cpp in Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume)
+==================
+==================
+WARNING: ThreadSanitizer: heap-use-after-free (pid=46805)
+  Read of size 8 at 0x7b1c00003cd0 by thread T4:
+    #0 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e3)
+    #1 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x7b1c00003cd0 by thread T4:
+    #0 operator delete(void*) <null> (co_uring_http+0x4c9450)
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca688)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Thread T4 (tid=46811, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: heap-use-after-free (/home/zhouheng/C++/co_uring_http/build/co_uring_http+0x4cb8e3) in co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop()
+==================
+==================
+WARNING: ThreadSanitizer: heap-use-after-free (pid=46805)
+  Read of size 8 at 0x7b1c000103f8 by thread T2:
+    #0 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca4b2)
+    #1 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #2 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x7b1c000103f8 by thread T2:
+    #0 operator delete(void*) <null> (co_uring_http+0x4c9450)
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca688)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Thread T2 (tid=46809, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: heap-use-after-free main.cpp in Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume)
+==================
+wtfwtf
+==================
+WARNING: ThreadSanitizer: heap-use-after-free (pid=46805)
+  Read of size 1 at 0x7b6000002c00 by thread T4:
+    #0 fwrite <null> (co_uring_http+0x45f2d5)
+    #1 std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> > std::__1::__pad_and_output<char, std::__1::char_traits<char> >(std::__1::ostreambuf_iterator<char, std::__1::char_traits<char> >, char const*, char const*, char const*, std::__1::ios_base&, char) <null> (co_uring_http+0x4cb354)
+    #2 std::__1::basic_ostream<char, std::__1::char_traits<char> >& std::__1::__put_character_sequence<char, std::__1::char_traits<char> >(std::__1::basic_ostream<char, std::__1::char_traits<char> >&, char const*, unsigned long) <null> (co_uring_http+0x4cb129)
+    #3 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca4d0)
+    #4 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #5 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x7b6000002c00 by thread T4:
+    #0 free <null> (co_uring_http+0x452c0a)
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca5b8)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Thread T4 (tid=46811, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: heap-use-after-free (/home/zhouheng/C++/co_uring_http/build/co_uring_http+0x45f2d5) in __interceptor_fwrite
+==================
+
+==================
+WARNING: ThreadSanitizer: heap-use-after-free (pid=46805)
+  Write of size 4 at 0x7b1c00010404 by thread T2:
+    #0 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca558)
+    #1 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #2 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x7b1c00010400 by thread T2:
+    #0 operator delete(void*) <null> (co_uring_http+0x4c9450)
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca688)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Thread T2 (tid=46809, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: heap-use-after-free main.cpp in Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume)
+==================
+==================
+WARNING: ThreadSanitizer: heap-use-after-free (pid=46805)
+  Read of size 8 at 0x7b1c00003d30 by thread T4:
+    #0 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca57a)
+    #1 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #2 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x7b1c00003d30 by thread T4:
+    #0 operator delete(void*) <null> (co_uring_http+0x4c9450)
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca688)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Thread T4 (tid=46811, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: heap-use-after-free main.cpp in Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume)
+==================
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+127.0.0.1
+==================
+WARNING: ThreadSanitizer: heap-use-after-free (pid=46805)
+  Write of size 4 at 0x7b1c00010418 by thread T2:
+    #0 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca597)
+    #1 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #2 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x7b1c00010418 by thread T2:
+    #0 operator delete(void*) <null> (co_uring_http+0x4c9450)
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca688)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Thread T2 (tid=46809, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: heap-use-after-free main.cpp in Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume)
+==================
+wtf
+wtf
+wtf
+wtfwtfwtf
+
+
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtfwtf
+
+wtf
+wtf
+wtfwtf
+wtf
+
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtfwtf
+wtf
+
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+127.0.0.1
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf127.0.0.1
+
+127.0.0.1
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+127.0.0.1
+wtf
+wtf
+wtf
+wtf                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+127.0.0.1
+127.0.0.1
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+127.0.0.1
+wtf                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+127.0.0.1
+wtf                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1127.0.0.1
+
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1127.0.0.1
+
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1127.0.0.1
+
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+127.0.0.1
+==================
+WARNING: ThreadSanitizer: heap-use-after-free (pid=46805)
+  Read of size 1 at 0x7b1c0000a858 by thread T5:
+    #0 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca659)
+    #1 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #2 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x7b1c0000a858 by thread T5:
+    #0 operator delete(void*) <null> (co_uring_http+0x4c9450)
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca688)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Thread T5 (tid=46812, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: heap-use-after-free main.cpp in Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume)
+==================
+==================
+WARNING: ThreadSanitizer: heap-use-after-free (pid=46805)
+  Read of size 1 at 0x7b1c0000a840 by thread T5:
+    #0 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca667)
+    #1 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #2 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x7b1c0000a840 by thread T5:
+    #0 operator delete(void*) <null> (co_uring_http+0x4c9450)
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca688)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Thread T5 (tid=46812, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: heap-use-after-free main.cpp in Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume)
+==================
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+==================
+WARNING: ThreadSanitizer: data race (pid=46805)
+  Write of size 8 at 0x7ba0000000d0 by thread T2:
+    #0 close <null> (co_uring_http+0x458b53)
+wtf
+    #1 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca650)
+    #2 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+wtf
+    #3 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x7ba0000000d0 by main thread:
+wtf
+    #0 accept <null> (co_uring_http+0x46aa33)
+wtf
+    #1 main <null> (co_uring_http+0x4ca286)
+
+  Location is file descriptor 13 created by main thread at:
+wtf
+    #0 accept <null> (co_uring_http+0x46aa33)
+    #1 main <null> (co_uring_http+0x4ca286)
+
+  Thread T2 (tid=46809, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: data race (/home/zhouheng/C++/co_uring_http/build/co_uring_http+0x458b53) in __interceptor_close
+==================
+127.0.0.1
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+127.0.0.1
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+ThreadSanitizer:DEADLYSIGNAL
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf
+wtf                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
+==================
+WARNING: ThreadSanitizer: heap-use-after-free (pid=46805)
+  Read of size 8 at 0x7b5000030008 by thread T3:
+    #0 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8d7)
+127.0.0.1
+    #1 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Previous write of size 8 at 0x7b5000030008 by thread T3:
+127.0.0.1
+    #0 free <null> (co_uring_http+0x452c0a)
+    #1 co_uring_web::utils::Logger::~Logger() <null> (co_uring_http+0x4ca908)
+    #2 Echo(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*) (.resume) main.cpp (co_uring_http+0x4ca640)
+    #3 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e8)
+    #4 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+
+  Thread T3 (tid=46810, running) created by main thread at:
+    #0 pthread_create <null> (co_uring_http+0x453ced)
+    #1 std::__1::thread::thread<co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int&, void>(co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int)&&, int&) <null> (co_uring_http+0x4cb504)
+    #2 co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*)) <null> (co_uring_http+0x4cabf2)
+    #3 main <null> (co_uring_http+0x4ca203)
+
+SUMMARY: ThreadSanitizer: heap-use-after-free (/home/zhouheng/C++/co_uring_http/build/co_uring_http+0x4cb8d7) in co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop()
+==================
+ThreadSanitizer==46805==ERROR: ThreadSanitizer: SEGV on unknown address (pc 0x0000004b4dc7 bp 0x7b5000040028 sp 0x7f2d050b9fe0 T46812)
+:DEADLYSIGNAL
+==46805==The signal is caused by a READ memory access.
+==46805==Hint: this fault was caused by a dereference of a high value address (see register values below).  Disassemble the provided pc to learn which register was used.
+    #0 __tsan_read8 <null> (co_uring_http+0x4b4dc7)
+    #1 co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>::loop() <null> (co_uring_http+0x4cb8e3)
+    #2 void* std::__1::__thread_proxy<std::__1::tuple<std::__1::unique_ptr<std::__1::__thread_struct, std::__1::default_delete<std::__1::__thread_struct> >, co_uring_web::core::TcpServer<co_uring_web::core::UringScheduler, Task>::TcpServer(int, int, Task (*)(co_uring_web::core::TcpConnection, co_uring_web::core::Scheduler<co_uring_web::core::UringScheduler, Task, true>*))::'lambda'(int), int> >(void*) <null> (co_uring_http+0x4cb615)
+    #3 __tsan_thread_start_func <null> (co_uring_http+0x453c4c)
+    #4 start_thread nptl/pthread_create.c:435:8 (libc.so.6+0x98926)
+    #5 __clone misc/../sysdeps/unix/sysv/linux/x86_64/clone.S:100 (libc.so.6+0x1289e3)
+
+ThreadSanitizer can not provide additional info.
+SUMMARY: ThreadSanitizer: SEGV (/home/zhouheng/C++/co_uring_http/build/co_uring_http+0x4b4dc7) in __tsan_read8
+==46805==ABORTING

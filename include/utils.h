@@ -1,20 +1,72 @@
 #pragma once
 #include <netinet/in.h>
+#include <sys/stat.h>
+#include <zlib.h>
 
 #include <cerrno>
+#include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <fstream>
 #include <iterator>
 #include <optional>
+#include <ratio>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
 namespace co_uring_web::utils {
+static std::string deflateCompress(std::string_view);
+static std::string deflateUncompress(std::string_view);
+
+static inline uint64_t stringHash(std::string_view str){
+	constexpr uint64_t p = 31;
+	constexpr uint64_t m = 1e9 + 9;
+	uint64_t powerOfP = 1;
+	uint64_t hashVal = 0;
+	for (char i : str) {
+		hashVal = (hashVal + (i - 'a' + 1) * powerOfP)%m;
+		powerOfP=(powerOfP*p)%m;
+	}
+	return (hashVal%m+m)%m;
+};
+constexpr uint64_t stringHashConstexpr(const std::string_view &str) {
+	constexpr uint64_t p = 31;
+	constexpr uint64_t m = 1e9 + 9;
+	uint64_t powerOfP = 1;
+	uint64_t hashVal = 0;
+	for (char i : str) {
+		hashVal = (hashVal + (i - 'a' + 1) * powerOfP)%m;
+		powerOfP=(powerOfP*p)%m;
+	}
+	return (hashVal%m+m)%m;
+}
+
+static inline int64_t getTimeInMilisecond() {
+	auto timepoint = std::chrono::system_clock::now();
+	int64_t res =
+	    std::chrono::duration_cast<std::chrono::milliseconds>(timepoint.time_since_epoch()).count();
+	return res;
+};
 std::string getcwdPath();
-std::optional<std::string> addr2str(sockaddr_in addr);
+std::string addr2str(sockaddr_in addr);
+
+static inline int getFileSizeByName(const std::string &name) {
+	struct stat s;
+	if (stat(name.c_str(), &s)) {
+		return -1;
+	}
+	return s.st_size;
+};
+static inline int getFileSizeByFd(int fd) {
+	struct stat s;
+	if (fstat(fd, &s)) {
+		return -1;
+	}
+	return s.st_size;
+}
 
 static inline std::vector<std::string_view>
 splitToViews(std::string_view str, std::string_view delimiter, int maxsplit = -1) {

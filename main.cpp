@@ -31,13 +31,14 @@ using EchoScheduler =
 Task Echo(co_uring_web::core::TcpConnection conn, EchoScheduler *scheduler) {
 	using namespace co_uring_web::core;
 	auto addrstr = co_uring_web::utils::addr2str(conn.remoteAddr);
-	if (addrstr) std::cout<<addrstr.value()<<std::endl;;
-	LOG_INFO<<addrstr.value();
+	printf("%s\n",addrstr.c_str());
+	LOG_INFO<<addrstr;
 	while (true) {
-		IoRequest req = {nullptr};
+		IoRequest req  {};
 		req.data = (char *)malloc(1024);
 		req.capicaty = 1024;
 		req.fd = conn.fd;
+		req.timeout=3000;
 		co_await scheduler->asyncRead(&req);
 		if (req.retCode <= 0) {
 			free(req.data);
@@ -46,7 +47,7 @@ Task Echo(co_uring_web::core::TcpConnection conn, EchoScheduler *scheduler) {
 			co_return;
 			
 		}
-		std::cout<<std::string_view(req.data,req.retCode)<<std::endl;
+		LOG_INFO<<std::string_view(req.data,req.retCode);
 		req.size = req.retCode;
 		co_await scheduler->asyncWrite(&req);
 		free(req.data);

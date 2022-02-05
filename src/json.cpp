@@ -151,8 +151,8 @@ JsonArray &JsonArray::operator=(const JsonArray &o) {
 	return *this;
 }
 JsonArray &JsonArray::operator=(JsonArray &&o) noexcept {
-	if (&o == this) return *this;
-	this->data = std::move(o.data);
+	if (&o == this)[[unlikely]] return *this;
+	this->data.swap(o.data);
 	return *this;
 }
 JsonMap::JsonMap(const JsonMapImpl &m) : JsonObj(JsonBaseType::JsonMapType) {
@@ -239,9 +239,9 @@ JsonMap &JsonMap::operator=(const JsonMap &o) {
 	return *this;
 }
 JsonMap &JsonMap::operator=(JsonMap &&o) noexcept {
-	if (&o == this) return *this;
+	if (&o == this)[[unlikely]] return *this;
 	this->jsonBaseType = JsonObj::JsonBaseType::JsonMapType;
-	this->data = std::move(o.data);
+	this->data.swap(o.data);
 	return *this;
 }
 std::unique_ptr<JsonObj> JsonParser::parse(const std::string_view view) {

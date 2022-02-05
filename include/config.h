@@ -31,6 +31,7 @@ class Config {
 	utils::JsonMap map_;
 	CONFIG_PROP(std::string, logger_file_name, "co_uring_http")
 	CONFIG_PROP(std::string, logger_output_dir, "/home/zhouheng/C++/co_uring_http/log")
+	CONFIG_PROP(std::string, http_dir, "/home/zhouheng/C++/co_uring_http/public")
    public:
     static void init(const std::string &config_file);
 	static Config&getInstance();

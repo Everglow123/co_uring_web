@@ -36,9 +36,9 @@
 #include "config.h"
 namespace co_uring_web::utils {
 class GlobalLoggerManager {
-	static GlobalLoggerManager *instance;
+	static GlobalLoggerManager *instance;//单例，需要手动初始化
 	int loggerFileFd_;
-	std::thread *loggerThread;
+	std::thread *loggerThread;//日志线程
 
    public:
 	static void init();
@@ -55,7 +55,8 @@ class GlobalLoggerManager {
 	static constexpr const char *outputFileExtensionName = "log";
 
 	/**
-	 * @brief rotate and dup2
+	 * @brief 日志滚动，此函数目的是，当当前写入的日志文件{outputDir_/fileName_.log}的大小超过一个g之后，把这个文件重名成{outputDir_/fileName_.log1}
+	 * 后面的文件以此类推，同时新建一个日志文件，并用dup2操作,把文件描述符loggerFileFd_重定向到新文件中
 	 *
 	 */
 	void rotate();
@@ -79,6 +80,10 @@ class LoggerInfoBuilder {
 	thread_local static char timeHeader[timeHeaderLength + 1];  //日志头 每秒构建一次
 	thread_local static time_t threadTime;  //线程本地的时间戳，以秒为单位
 	thread_local static pthread_t threadId; 
+	/**
+	 * @brief iovecs_[0]是日志信息固定头部,iovecs_[1]才是具体的日志信息
+	 * 
+	 */
 	iovec iovecs_[2] = {{nullptr, 0}, {nullptr, 0}};
 	LoggerInfoBuilder() = default;
 	~LoggerInfoBuilder() { free(iovecs_[1].iov_base); }

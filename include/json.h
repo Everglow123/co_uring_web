@@ -58,12 +58,18 @@ class JsonString : public JsonObj {
 	JsonString(const JsonString &s) = default;
 	JsonString(JsonString &&) noexcept = default;
 	JsonString &operator=(const JsonString &) = default;
-	JsonString &operator=(JsonString &&) noexcept = default;
+	JsonString &operator=(JsonString &&other) noexcept{
+		if(this==&other) [[unlikely]] return *this;
+		data.swap(other.data);
+		return *this;
+	};
 	inline JsonString &operator=(const std::string &s) {
 		data = s;
 		return *this;
 	}
 	inline JsonString &operator=(std::string &&s) {
+		if (&(this->data) == &s) [[unlikely]]
+			return *this;
 		data = std::move(s);
 		return *this;
 	}
