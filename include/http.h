@@ -15,6 +15,7 @@
 #include <cerrno>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <experimental/coroutine>
@@ -125,15 +126,15 @@ enum HttpResponseStatusCodes {
 	C510 = 510,  // Not Extended (RFC 2774)
 	C511 = 511   // Network Authentication Required (RFC 6585)
 };
-static constexpr int defaultHttpRequestReadBufferSize=8192;
-static std::string_view getStatusText(HttpResponseStatusCodes code);
+static constexpr int defaultHttpRequestReadBufferSize = 8192;
+std::string_view getStatusText(HttpResponseStatusCodes code);
 /**
  * @brief Get the Content Type object 如果是未知类型返回空字符串
  *
  * @param fileExt
  * @return std::string_view
  */
-static std::string_view getContentType(std::string_view fileExt);
+std::string_view getContentType(std::string_view fileExt);
 class HttpRequest {
 	std::string url_;
 	std::map<std::string, std::string> headers_;
@@ -142,10 +143,13 @@ class HttpRequest {
 	HttpVersion version_ {VERSION_NOTHING};
 
    public:
-	[[nodiscard]] inline std::string_view getUrl() const {
+	[[nodiscard]] inline std::string getUrl() const {
 		using namespace std;
 		if (url_ == "/"sv) {
 			return "index.html";
+		}
+		if(url_.front()=='/') {
+			return url_.substr(1);
 		}
 		return url_;
 	};
@@ -265,10 +269,12 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 	using namespace core;
 	namespace fs = filesystem;
 	//先读
-	IoRequest req;
+	IoRequest req={};
 	unique_ptr<char[]> reqBuff = std::make_unique<char[]>(defaultHttpRequestReadBufferSize);
 	req.data = reqBuff.get();
 	req.capicaty = defaultHttpRequestReadBufferSize;
+	req.fd = conn.fd;
+
 	co_await scheduler->asyncRead(&req);
 	if (req.retCode <= 0) {
 		LOG_WARN << "http 读异常,来自 " << utils::addr2str(conn.remoteAddr) << ':'
@@ -286,7 +292,8 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 		co_return;
 	}
 	auto url = httpRequest->getUrl();
-	fs::path abspath = fs::path(Config::getInstance().get_http_dir()) / url;
+	fs::path abspath = fs::path(Config::getInstance().get_http_dir())/url;
+	// fprintf(stderr, "%s",abspath.c_str());
 	int fd = open(abspath.c_str(), O_RDONLY);
 	if (fd == -1) {
 		int err = errno;
@@ -307,7 +314,7 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 	if (fileSize == -1) {
 		int err = errno;
 		char errBuff[64];
-
+		close(fd);
 		LOG_INFO << "http打开文件路径失败: " << url << " " << strerror_r(err, errBuff, 64);
 
 		IoRequest req;
@@ -323,7 +330,7 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 	if (ret == -1) {
 		int err = errno;
 		char errBuff[64];
-
+		close(fd);
 		LOG_INFO << "http读取文件失败: " << url << " " << strerror_r(err, errBuff, 64);
 
 		IoRequest req;
@@ -334,23 +341,27 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 		close(conn.fd);
 		co_return;
 	}
+	close(fd);
 	auto response = HttpResponse();
 	response.setBody(move(fileContent));
 	auto fileExtnameStart = url.find_last_of('.');
 	if (fileExtnameStart != string_view::npos) {
+		fileExtnameStart+=1;
 		auto fileExtname = url.substr(fileExtnameStart);
 		auto contentType = getContentType(fileExtname);
-		if (!contentType.empty()) response.setHeader("Content-Type"sv, contentType);
+		if (!contentType.empty()) {
+			response.setHeader("Content-Type"sv, contentType);
+		}
 	}
 	response.setHeader("Content-Length"sv, to_string(response.getBody().size()));
-	auto respRawData=response.toRawData();
+	auto respRawData = response.toRawData();
 	// response
 	req = IoRequest {};
 	req.fd = conn.fd;
 	req.data = respRawData.data();
 	req.size = respRawData.size();
 
-	co_await scheduler->asyncWrite(&req); 
+	co_await scheduler->asyncWrite(&req);
 	close(conn.fd);
 	co_return;
 };

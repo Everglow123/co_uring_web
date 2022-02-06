@@ -18,8 +18,8 @@
 #include <string_view>
 #include <vector>
 namespace co_uring_web::utils {
-static std::string deflateCompress(std::string_view);
-static std::string deflateUncompress(std::string_view);
+std::string deflateCompress(std::string_view);
+std::string deflateUncompress(std::string_view);
 
 static inline uint64_t stringHash(std::string_view str){
 	constexpr uint64_t p = 31;
@@ -32,7 +32,7 @@ static inline uint64_t stringHash(std::string_view str){
 	}
 	return (hashVal%m+m)%m;
 };
-constexpr uint64_t stringHashConstexpr(const std::string_view &str) {
+static constexpr uint64_t stringHashConstexpr(const std::string_view &str) {
 	constexpr uint64_t p = 31;
 	constexpr uint64_t m = 1e9 + 9;
 	uint64_t powerOfP = 1;

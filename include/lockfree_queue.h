@@ -55,7 +55,7 @@ class LockfreeQueue<T, true> {
 		uint32_t currentReadIndex;
 		do {
 			currentReadIndex = readIndex_.load();
-			if (count2Index(readIndex_.load()) == count2Index(writeIndex_.load())) {
+			if (readIndex_.load() == writeIndex_.load()) {
 				//说明已经空了
 				return false;
 			}

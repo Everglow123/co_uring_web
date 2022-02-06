@@ -41,7 +41,7 @@ struct IoRequest {
 	IoRequestOp op;
 	int timeout {0};
 };
-static inline int setNonblocking(int fd) {
+inline int setNonblocking(int fd) {
 	int oldOption = fcntl(fd, F_GETFL);  // NOLINT
 	int newOption = oldOption | O_NONBLOCK;
 	fcntl(fd, F_SETFL, newOption);
@@ -84,7 +84,7 @@ class EpollScheduler {
 class UringScheduler {
 	uint64_t ioIndex_ {0};
 	std::unordered_map<uint64_t, void *> ioIndex2req_;
-	static constexpr uint32_t UringSize = 256;              // io_uring队列深度
+	static constexpr uint32_t UringSize = 10240;              // io_uring队列深度
 	static constexpr uint32_t UringTimeoutMiliseconds = 1;  //超时设置成1毫秒
 	io_uring uring_;
 	TimerQueue timerQueue_;
@@ -183,7 +183,7 @@ class Scheduler<SchedulerImpl, TaskImpl, true> {
 		while (true) {
 			readyHandleAddrs.clear();
 			TcpConnection conn = {0};
-			if (queue_->pop(conn)) {
+			while(queue_->pop(conn)) {
 				auto coroutine = func_(conn, this);
 			}
 			impl_.poll(readyHandleAddrs);
@@ -216,6 +216,7 @@ class TcpServer {
 			assert(0);
 			abort();
 		}
+		
 
 		int enable = 1;
 		if (setsockopt(sock_, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
@@ -233,7 +234,7 @@ class TcpServer {
 			abort();
 		}
 
-		if (listen(sock_, 65535) < 0) {
+		if (listen(sock_, 1145) < 0) {
 			perror("listen()");
 			assert(0);
 			abort();
@@ -260,11 +261,11 @@ class TcpServer {
 	void run() {
 		uint64_t index = 0;
 		while (true) {
-			TcpConnection tcpConn = {0};
+			TcpConnection tcpConn = {};
 			socklen_t len = sizeof(tcpConn.remoteAddr);
 			//主线程始终监听socket并接受新连接。
 			tcpConn.fd = ::accept(sock_, (sockaddr *)&(tcpConn.remoteAddr), &len);  // NOLINT
-
+			if(tcpConn.fd==-1)continue;
 			while (!(queues_[index % thread_count_].push(tcpConn))) {
 				//不成功的话，说明已经满了
 				index += 1;

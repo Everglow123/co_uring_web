@@ -342,7 +342,7 @@ std::string HttpResponse::toRawData() {
 		}
 		res.at(index) = ' ';  //空格
 		index++;
-		memcpy(res.data() + index, to_string(version_).data(), 3);  //状态码
+		memcpy(res.data() + index, to_string(statusCode_).data(), 3);  //状态码
 		index += 3;
 		res.at(index) = ' ';  //空格
 		index++;

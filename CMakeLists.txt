@@ -12,8 +12,9 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/src)
 message(${PROJECT_SOURCE_DIR}/include)
 set(CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -v -fsanitize=thread -stdlib=libc++ -std=c++20")
-add_executable(co_uring_http main.cpp)
+add_executable(co_uring_echo echo.cpp)
+add_executable(static_web_http static_web_http.cpp)
 
+target_link_libraries(co_uring_echo co_uring_srcs)
 
-target_link_libraries(co_uring_http co_uring_srcs)
-
+target_link_libraries(static_web_http co_uring_srcs)

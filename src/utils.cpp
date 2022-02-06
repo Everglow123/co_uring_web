@@ -72,7 +72,7 @@ std::string deflateCompress(std::string_view view) {
 	}
 	return res;
 };
-std::string deflateUncompress(std::string_view view) {
+ std::string deflateUncompress(std::string_view view) {
 	using namespace std;
 	int err;
 	z_stream zs;

@@ -115,14 +115,16 @@ void EpollScheduler::handleRead(IoRequest &req) {
 	int readsz = read(req.fd, req.data, req.capicaty);
 	if (readsz < 0) {  //一上来就不能读
 		int err = errno;
-		if (err != EAGAIN && err != EINTR) {
+		if (err != EAGAIN) {
 			req.retCode = -1;
 			completedHandleAddrs_.push_back(req.context);
 			return;
 		}
 		epoll_event event {0};
 		event.events = EPOLLIN | EPOLLET;
-		event.data.ptr = &req;
+		uint64_t id = ioIndex_++;
+		event.data.u64=id;
+		this->ioIndex2req_.insert({id, &req});
 		int ret = epoll_ctl(epollfd_, EPOLL_CTL_ADD, req.fd, &event);
 
 		if (ret == -1) {
@@ -134,8 +136,8 @@ void EpollScheduler::handleRead(IoRequest &req) {
 			completedHandleAddrs_.push_back(req.context);
 			return;
 		}
-		uint64_t id = ioIndex_++;
-		this->ioIndex2req_.insert({id, &req});
+		
+		
 		if (req.timeout > 0)  //不能一次性读完，且需要定时器的情况
 			this->timerQueue_.add(id, utils::getTimeInMilisecond() + req.timeout);
 		// uncompletedReqs.push_back(&req);
@@ -153,7 +155,7 @@ void EpollScheduler::handleWrite(IoRequest &req) {
 	int written = write(req.fd, req.data, req.size);
 	if (written < 0) {  //如果一上来就不可写的话
 		int err = errno;
-		if (err != EAGAIN && err != EINTR) {  //排除掉其他错误
+		if (err != EAGAIN) {  //排除掉其他错误
 			req.retCode = -1;
 			completedHandleAddrs_.push_back(req.context);
 			return;
@@ -177,7 +179,7 @@ void EpollScheduler::handleWrite(IoRequest &req) {
 		written = write(req.fd, req.data + req.retCode, req.size - req.retCode);
 		if (written == -1) {
 			int err = errno;
-			if (err != EAGAIN && err != EINTR) {
+			if (err != EAGAIN) {
 				req.retCode = -1;
 				completedHandleAddrs_.push_back(req.context);
 				return;
@@ -233,7 +235,7 @@ void EpollScheduler::poll(std::vector<void *> &readyHandleAddrs) {
 				req->retCode = 0;  //对端关闭了连接
 			} else if (readsz < 0) {
 				int err = errno;
-				assert(err != EAGAIN && err != EINTR);  //必不可能是资源不可用
+				assert(err != EAGAIN);  //必不可能是资源不可用
 				req->retCode = -1;
 				char errBuff[64];
 				LOG_ERROR << "epoll:"sv << epollfd_ << " add error : "sv << err << " 即 "sv
@@ -264,12 +266,12 @@ void EpollScheduler::poll(std::vector<void *> &readyHandleAddrs) {
 				ret = write(req->fd, req->data + req->retCode, req->size - req->retCode);
 				assert(ret == -1);
 				int err = errno;
-				assert(err == EAGAIN || err == EINTR);
+				assert(err == EAGAIN);
 				continue;
 			}
 			if (ret < 0) {
 				int err = errno;
-				assert(err != EAGAIN && err != EINTR);  //必不可能是资源不可用
+				assert(err != EAGAIN);  //必不可能是资源不可用
 				req->retCode = -1;
 				char errBuff[64];
 				LOG_ERROR << "epoll:"sv << epollfd_ << " add error : "sv << err << " 即 "sv
