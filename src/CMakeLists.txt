@@ -9,6 +9,6 @@ foreach(name ${SRCS})
     message(${name})
 endforeach(name ${SRCS})
 set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} -v -fsanitize=thread -stdlib=libc++ -std=c++20")
+    "${CMAKE_CXX_FLAGS} -v  -stdlib=libc++ -std=c++20")
 add_library(co_uring_srcs ${SRCS})
 target_link_libraries(co_uring_srcs pthread atomic uring z)

@@ -28,7 +28,7 @@
 namespace co_uring_web::core {
 UringScheduler::UringScheduler() {
 	io_uring_queue_init(UringScheduler::UringSize, &uring_, 0);
-	this->ioIndex2req_.bucket(10000);
+	this->ioIndex2req_.reserve(10000);
 }
 void UringScheduler::handleRead(IoRequest &req) {
 	assert(req.op == IoRequestOp::OP_READ);
@@ -48,7 +48,7 @@ void UringScheduler::handleWrite(IoRequest &req) {
 
 	uint64_t id = ioIndex_++;
 	io_uring_sqe *sqe = io_uring_get_sqe(&uring_);
-	io_uring_prep_write(sqe, req.fd, req.data, req.capicaty - req.size, 0);
+	io_uring_prep_write(sqe, req.fd, req.data, req.size, 0);
 	io_uring_sqe_set_data(sqe, (void *)id);
 	io_uring_submit(&uring_);
 
@@ -59,7 +59,7 @@ void UringScheduler::handleWrite(IoRequest &req) {
 }
 void UringScheduler::poll(std::vector<void *> &readyHandleAddrs) {
 	struct io_uring_cqe *cqe;
-	__kernel_timespec ts = {.tv_sec = 0, .tv_nsec = UringTimeoutMiliseconds * 1000000};
+	__kernel_timespec ts = {.tv_sec = 0, .tv_nsec = UringTimeoutMiliseconds * 100};
 	while (true) {
 		int ret = io_uring_wait_cqe_timeout(&uring_, &cqe, &ts);
 		if (ret < 0) {
@@ -106,6 +106,7 @@ EpollScheduler::EpollScheduler() {
 		LOG_FATAL << "epoll 创建失败 : "sv << err << " : "sv << strerror_r(err, errBuff, 64);
 		assert(0);
 	}
+	this->ioIndex2req_.reserve(10000);
 }
 void EpollScheduler::handleRead(IoRequest &req) {
 	//先直接读

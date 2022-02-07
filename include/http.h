@@ -148,7 +148,7 @@ class HttpRequest {
 		if (url_ == "/"sv) {
 			return "index.html";
 		}
-		if(url_.front()=='/') {
+		if (url_.front() == '/') {
 			return url_.substr(1);
 		}
 		return url_;
@@ -245,6 +245,8 @@ class HttpResponse {
 	inline void setBody(const std::string &body) { body_ = body; }
 	[[nodiscard]] inline std::string_view getBody() const { return body_; }
 	std::string toRawData();
+	int getRawDataSizeWithoutBody();
+	void toRawDataWithoutBody(char *buffer);
 };
 struct HttpTask {
 	struct promise_type {
@@ -269,7 +271,7 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 	using namespace core;
 	namespace fs = filesystem;
 	//先读
-	IoRequest req={};
+	IoRequest req = {};
 	unique_ptr<char[]> reqBuff = std::make_unique<char[]>(defaultHttpRequestReadBufferSize);
 	req.data = reqBuff.get();
 	req.capicaty = defaultHttpRequestReadBufferSize;
@@ -289,10 +291,11 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 		LOG_WARN << "http request解析错误,来自 " << utils::addr2str(conn.remoteAddr) << ':'
 		         << ntohs(conn.remoteAddr.sin_port) << ' '
 		         << string_view {req.data, (size_t)req.retCode};
+		close(conn.fd);
 		co_return;
 	}
 	auto url = httpRequest->getUrl();
-	fs::path abspath = fs::path(Config::getInstance().get_http_dir())/url;
+	fs::path abspath = fs::path(Config::getInstance().get_http_dir()) / url;
 	// fprintf(stderr, "%s",abspath.c_str());
 	int fd = open(abspath.c_str(), O_RDONLY);
 	if (fd == -1) {
@@ -325,8 +328,25 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 		close(conn.fd);
 		co_return;
 	}
-	std::string fileContent(fileSize, 0);
-	int ret = read(fd, fileContent.data(), fileSize);
+	auto response = HttpResponse();
+
+	auto fileExtnameStart = url.find_last_of('.');
+	if (fileExtnameStart != string_view::npos) {
+		fileExtnameStart += 1;
+		auto fileExtname = url.substr(fileExtnameStart);
+		auto contentType = getContentType(fileExtname);
+		if (!contentType.empty()) {
+			response.setHeader("Content-Type"sv, contentType);
+		}
+	}
+
+	response.setHeader("server"sv, ServerString);
+	response.setHeader("Content-Length"sv, to_string(fileSize));
+	int headersSize = response.getRawDataSizeWithoutBody();
+	auto res = std::make_unique<char[]>(headersSize + fileSize);
+
+	response.toRawDataWithoutBody(res.get());
+	int ret = read(fd, res.get() + headersSize, fileSize);
 	if (ret == -1) {
 		int err = errno;
 		char errBuff[64];
@@ -342,24 +362,12 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 		co_return;
 	}
 	close(fd);
-	auto response = HttpResponse();
-	response.setBody(move(fileContent));
-	auto fileExtnameStart = url.find_last_of('.');
-	if (fileExtnameStart != string_view::npos) {
-		fileExtnameStart+=1;
-		auto fileExtname = url.substr(fileExtnameStart);
-		auto contentType = getContentType(fileExtname);
-		if (!contentType.empty()) {
-			response.setHeader("Content-Type"sv, contentType);
-		}
-	}
-	response.setHeader("Content-Length"sv, to_string(response.getBody().size()));
-	auto respRawData = response.toRawData();
+
 	// response
 	req = IoRequest {};
 	req.fd = conn.fd;
-	req.data = respRawData.data();
-	req.size = respRawData.size();
+	req.data = res.get();
+	req.size = headersSize + fileSize;
 
 	co_await scheduler->asyncWrite(&req);
 	close(conn.fd);

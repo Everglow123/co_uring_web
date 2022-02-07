@@ -33,7 +33,7 @@ class LockfreeQueue<T, true> {
 	std::atomic<uint32_t> readIndex_;
 	uint32_t capicity_;
 	T *queue_;
-	static constexpr uint32_t DefaultCapicity = 1024;
+	static constexpr uint32_t DefaultCapicity = 256000;
 	char padding[64];  //填充缓存行，防止伪共享
 
    public:

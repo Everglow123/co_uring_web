@@ -211,7 +211,7 @@ class Logger {
 		if (level_ > WARN) {
 			fsync(GlobalLoggerManager::getInstance().getLoggerFileFd());
 		}
-		free(builder_.iovecs_[1].iov_base);
+	
 	}
 };
 

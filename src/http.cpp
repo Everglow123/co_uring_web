@@ -9,6 +9,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 #include "logger.h"
 #include "utils.h"
@@ -384,4 +385,89 @@ std::string HttpResponse::toRawData() {
 		return {};
 	}
 };
+int HttpResponse::getRawDataSizeWithoutBody(){
+	int resSize = 0;
+	//"HTTP/1.0 200 "
+	resSize += 13;
+	// status text
+	resSize += getStatusText(statusCode_).size();
+	//\r\n
+	resSize += 2;  // request line长度
+
+	for (auto &header : headers_) {
+		// key长度+冒号+空格+value长度+\r\n
+		resSize += header.first.size() + 1 + 1 + header.second.size() + 2;
+	}
+	//空行
+	resSize += 2;
+	return resSize;
+}
+void HttpResponse::toRawDataWithoutBody(char *buffer){
+	try {
+		using namespace std;
+		int index = 0;
+		memcpy(buffer + index, "HTTP/"sv.data(), "HTTP/"sv.size());
+		index += "HTTP/"sv.size();
+		switch (version_) {
+			case HttpVersion::VERSION_NOTHING: {
+				throw std::invalid_argument("http response version 为 NOTHING");
+			}
+			case HttpVersion::V10: {
+				memcpy(buffer + index, "1.0"sv.data(), "1.0"sv.size());
+				index += "1.0"sv.size();
+				break;
+			}
+			case HttpVersion::V11: {
+				memcpy(buffer + index, "1.1"sv.data(), "1.1"sv.size());
+				index += "1.1"sv.size();
+				break;
+			}
+			case HttpVersion::V9: {
+				memcpy(buffer, "0.9"sv.data(), "0.9"sv.size());
+				index += "0.9"sv.size();
+				break;
+			}
+			default: {
+				throw std::invalid_argument("未知的 http response version");
+			}
+		}
+		buffer[index] = ' ';  //空格
+		index++;
+		memcpy(buffer + index, to_string(statusCode_).data(), 3);  //状态码
+		index += 3;
+		buffer[index] = ' ';  //空格
+		index++;
+		auto statusText = getStatusText(statusCode_);
+		if (statusText.empty()) {
+			throw std::invalid_argument("未知的 http response status code");
+		}
+		memcpy(buffer + index, statusText.data(), statusText.size());  //状态文字
+		index += statusText.size();
+		memcpy(buffer + index, "\r\n", 2);  //\r\n
+		index += 2;
+		for (auto &[key, value] : headers_) {
+			memcpy(buffer + index, key.data(), key.size());
+			index += key.size();
+			buffer[index] = ':';
+			index++;
+			buffer[index] = ' ';
+			index++;
+			memcpy(buffer + index, value.data(), value.size());
+			index += value.size();
+			buffer[index] = '\r';
+			index++;
+			buffer[index] = '\n';
+			index++;
+		}
+		buffer[index] = '\r';
+		index++;
+		buffer[index] = '\n';
+		index++;
+		
+		
+
+	} catch (const std::exception &e) {
+		LOG_WARN << e;
+	}
+}
 };  // namespace co_uring_web
