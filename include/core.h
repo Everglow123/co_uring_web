@@ -30,7 +30,7 @@
 #include "timer.h"
 namespace co_uring_web::core {
 
-enum class IoRequestOp : int { OP_READ, OP_WRITE, OP_CONNECT };
+enum class IoRequestOp : int { OP_READ, OP_WRITE };
 struct IoRequest {
 	char *data {nullptr};
 	uint32_t capicaty {0};
@@ -185,7 +185,8 @@ class Scheduler<SchedulerImpl, TaskImpl, true> {
 			readyHandleAddrs.clear();
 			TcpConnection conn = {0};
 			while(queue_->pop(conn)) {
-				auto coroutine = func_(conn, this);
+				 func_(conn, this);
+				
 			}
 			impl_.poll(readyHandleAddrs);
 			for (auto *addr : readyHandleAddrs) {
