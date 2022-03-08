@@ -1,6 +1,6 @@
 # co_uring_web
 这个项目是把C++20协程与io_uring/epoll结合的一个web server。需要clang-13和linux内核大于5.10
-使用ab -n 600000 -c 10000 http://127.0.0.1:8888/tux.png进行本机测试，epoll版本能在16秒左右全部处理完，
+使用ab -n 600000 -c 10000 http://127.0.0.1:8888/tux.png 进行本机测试，epoll版本能在16秒左右全部处理完，
 io_uring实现在20秒左右处理完。(因为io_uring_wait_cqe_timeout函数有bug,没有按照给定超时时间返回,进而影响其接收主线程的连接)。
 
 
