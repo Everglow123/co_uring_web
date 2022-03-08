@@ -1,6 +1,10 @@
 # co_uring_web
-这个项目是把C++20协程与io_uring/epoll结合的一个web server。
-主要内容包括:
+这个项目是把C++20协程与io_uring/epoll结合的一个web server。需要clang-13和linux内核大于5.10
+使用ab -n 600000 -c 10000 http://127.0.0.1:8888/tux.png进行本机测试，epoll版本能在16秒左右全部处理完，
+io_uring实现在20秒左右处理完。(因为io_uring_wait_cqe_timeout函数有bug,没有按照给定超时时间返回,进而影响其接收主线程的连接)。
+
+
+此项目主要内容包括:
 
 - C++20协程调度器的实现
 - 使用io_uring--linux上的新型高性能异步io接口
@@ -98,7 +102,7 @@ struct AsyncWrite {
         
     //co_await AsyncWrite{};异步操作完成，获取这个表达式的返回值，在调用 handle.resume()之后运行。
 	inline IoRequest *await_resume() { return req; }
-	};
+};
 ```
 
 

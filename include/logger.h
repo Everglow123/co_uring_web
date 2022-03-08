@@ -43,6 +43,12 @@ class GlobalLoggerManager {
    public:
 	static void init();
 	inline int getLoggerFileFd() noexcept { return loggerFileFd_; }
+	/**
+	 * @brief 检查是否需要进行滚动
+	 * 
+	 * @return true 
+	 * @return false 
+	 */
 	bool checkNeedRotate();
 
    private:

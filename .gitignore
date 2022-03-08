@@ -1,7 +1,7 @@
-compile_commands.json
+
 .vscode
 .cache
 .kdev4
 build/
-log/
-public/
+*.html
+*.css

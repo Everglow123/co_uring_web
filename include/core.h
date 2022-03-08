@@ -71,20 +71,20 @@ class EpollScheduler {
 	EpollScheduler(EpollScheduler &&) = default;
 	EpollScheduler &operator=(const EpollScheduler &) = delete;
 	EpollScheduler &operator=(EpollScheduler &&other) {
-		if(&other==this)return *this;
-		ioIndex_=other.ioIndex_;
+		if (&other == this) return *this;
+		ioIndex_ = other.ioIndex_;
 		ioIndex2req_.swap(other.ioIndex2req_);
-		epollfd_=other.epollfd_;
+		epollfd_ = other.epollfd_;
 		completedHandleAddrs_.swap(other.completedHandleAddrs_);
-		timerQueue_=std::move(other.timerQueue_);
+		timerQueue_ = std::move(other.timerQueue_);
 		return *this;
 	};
 };
 
 class UringScheduler {
-	uint64_t ioIndex_ {0};
+	uint64_t ioIndex_ {1};
 	std::unordered_map<uint64_t, void *> ioIndex2req_;
-	static constexpr uint32_t UringSize = 10240;              // io_uring队列深度
+	static constexpr uint32_t UringSize = 2048;            // io_uring队列深度
 	static constexpr uint32_t UringTimeoutMiliseconds = 1;  //超时设置成1毫秒
 	io_uring uring_;
 	TimerQueue timerQueue_;
@@ -97,14 +97,22 @@ class UringScheduler {
 	UringScheduler(const UringScheduler &) = delete;
 	UringScheduler(UringScheduler &&) = default;
 	UringScheduler &operator=(const UringScheduler &) = delete;
-	UringScheduler &operator=(UringScheduler &&other){
-		if(this==&other)[[unlikely]]return *this;
-		ioIndex_=other.ioIndex_;
+	UringScheduler &operator=(UringScheduler &&other) {
+		if (this == &other) [[unlikely]]
+			return *this;
+		ioIndex_ = other.ioIndex_;
 		ioIndex2req_.swap(other.ioIndex2req_);
-		uring_=other.uring_;
-		timerQueue_=std::move(other.timerQueue_);
+		uring_ = other.uring_;
+		timerQueue_ = std::move(other.timerQueue_);
 		return *this;
 	};
+	private:
+	inline void addTimeout(){
+	__kernel_timespec ts = {.tv_sec = 0, .tv_nsec = UringTimeoutMiliseconds * 1000};
+	io_uring_sqe *sqe = io_uring_get_sqe(&uring_);sqe=io_uring_get_sqe(&uring_);
+	io_uring_prep_timeout(sqe, &ts, 1, IORING_TIMEOUT_ABS);
+	io_uring_submit(&uring_);
+	}
 };
 
 template <class SchdulerImpl>
@@ -113,8 +121,7 @@ class ScheduleImpl_SFINAE {
 	static constexpr bool check_func_handle_write =
 	    std::is_member_function_pointer<decltype(&SchdulerImpl::handleWrite)>::value &&
 	    std::is_same<decltype(std::declval<SchdulerImpl>().handleWrite(
-	                     std::declval<IoRequest &>())),
-	                 void>::value;
+	                     std::declval<IoRequest &>())),void>::value;
 	static constexpr bool check_func_handle_read =
 	    std::is_member_function_pointer<decltype(&SchdulerImpl::handleRead)>::value &&
 	    std::is_same<decltype(std::declval<SchdulerImpl>().handleRead(std::declval<IoRequest &>())),
@@ -178,21 +185,22 @@ class Scheduler<SchedulerImpl, TaskImpl, true> {
 		return AsyncWrite {.req = req, .scheduler = this};
 	}
 	inline AsyncRead asyncRead(IoRequest *req) { return AsyncRead {.req = req, .scheduler = this}; }
-	
+
 	__attribute__((noreturn)) void loop() {
 		std::vector<void *> readyHandleAddrs;
+		readyHandleAddrs.reserve(100000);
 		while (true) {
 			readyHandleAddrs.clear();
 			TcpConnection conn = {0};
-			while(queue_->pop(conn)) {
-				 func_(conn, this);
-				
+			while (queue_->pop(conn)) {
+				func_(conn, this);
 			}
 			impl_.poll(readyHandleAddrs);
 			for (auto *addr : readyHandleAddrs) {
 				auto handle = std::experimental::coroutine_handle<
 				    typename TaskImpl::promise_type>::from_address(addr);
 				handle.resume();
+				
 			}
 		}
 	}
@@ -218,7 +226,6 @@ class TcpServer {
 			assert(0);
 			abort();
 		}
-		
 
 		int enable = 1;
 		if (setsockopt(sock_, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
@@ -236,12 +243,12 @@ class TcpServer {
 			abort();
 		}
 
-		if (listen(sock_,23333) < 0) {
+		if (listen(sock_, 23333) < 0) {
 			perror("listen()");
 			assert(0);
 			abort();
 		}
-	
+
 		queues_ = (LockfreeQueue<TcpConnection> *)malloc(thread_count *
 		                                                 sizeof(LockfreeQueue<TcpConnection>));
 		for (int i = 0; i < thread_count; ++i) {
@@ -267,7 +274,7 @@ class TcpServer {
 			socklen_t len = sizeof(tcpConn.remoteAddr);
 			//主线程始终监听socket并接受新连接。
 			tcpConn.fd = ::accept(sock_, (sockaddr *)&(tcpConn.remoteAddr), &len);  // NOLINT
-			if(tcpConn.fd==-1)continue;
+			if (tcpConn.fd == -1) continue;
 			while (!(queues_[index % thread_count_].push(tcpConn))) {
 				//不成功的话，说明已经满了
 				index += 1;

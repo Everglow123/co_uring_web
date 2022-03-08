@@ -1,0 +1,3893 @@
+/home/zhouheng/C++/co_uring_http/include/config.h:
+    1|       |/**
+    2|       | *@文件    :config.h
+    3|       | *@时间    :2022/01/18 14:22:51
+    4|       | *@作者    :周恒
+    5|       | *@版本    :1.0
+    6|       | *@说明    :
+    7|       | **/
+    8|       |#pragma once
+    9|       |#include <a.out.h>
+   10|       |#include <pthread.h>
+   11|       |
+   12|       |#include <atomic>
+   13|       |#include <string>
+   14|       |#include <utility>
+   15|       |
+   16|       |#include "json.h"
+   17|       |#include "utils.h"
+   18|       |namespace co_uring_web {
+   19|       |
+   20|       |#define CONFIG_PROP(type, name, default_value)                  \
+   21|       |   private:                                                     \
+   22|       |	type name##_;                                               \
+   23|       |                                                                \
+   24|       |   public:                                                      \
+   25|   600k|	inline type get_##name() const { return name##_; };         \
+  ------------------
+  | _ZNK12co_uring_web6Config12get_http_dirEv:
+  |   25|   600k|	inline type get_##name() const { return name##_; };         \
+  ------------------
+  | _ZNK12co_uring_web6Config20get_logger_file_nameEv:
+  |   25|      1|	inline type get_##name() const { return name##_; };         \
+  ------------------
+  | _ZNK12co_uring_web6Config21get_logger_output_dirEv:
+  |   25|      1|	inline type get_##name() const { return name##_; };         \
+  ------------------
+   26|       |                                                                \
+   27|       |   private:                                                     \
+   28|      3|	void init_##name() {                                        \
+   29|      3|		auto it = this->map_.data.find(#name);                  \
+   30|      3|		if (it == map_.data.end()) {                            \
+   31|      1|			name##_ = default_value;                            \
+   32|      2|		} else {                                                \
+   33|      2|			name##_ = *((type *)(it->second.get()->getData())); \
+   34|      2|		}                                                       \
+   35|      3|	}
+  ------------------
+  | _ZN12co_uring_web6Config21init_logger_file_nameEv:
+  |   28|      1|	void init_##name() {                                        \
+  |   29|      1|		auto it = this->map_.data.find(#name);                  \
+  |   30|      1|		if (it == map_.data.end()) {                            \
+  |   31|      0|			name##_ = default_value;                            \
+  |   32|      1|		} else {                                                \
+  |   33|      1|			name##_ = *((type *)(it->second.get()->getData())); \
+  |   34|      1|		}                                                       \
+  |   35|      1|	}
+  ------------------
+  | _ZN12co_uring_web6Config22init_logger_output_dirEv:
+  |   28|      1|	void init_##name() {                                        \
+  |   29|      1|		auto it = this->map_.data.find(#name);                  \
+  |   30|      1|		if (it == map_.data.end()) {                            \
+  |   31|      0|			name##_ = default_value;                            \
+  |   32|      1|		} else {                                                \
+  |   33|      1|			name##_ = *((type *)(it->second.get()->getData())); \
+  |   34|      1|		}                                                       \
+  |   35|      1|	}
+  ------------------
+  | _ZN12co_uring_web6Config13init_http_dirEv:
+  |   28|      1|	void init_##name() {                                        \
+  |   29|      1|		auto it = this->map_.data.find(#name);                  \
+  |   30|      1|		if (it == map_.data.end()) {                            \
+  |   31|      1|			name##_ = default_value;                            \
+  |   32|      1|		} else {                                                \
+  |   33|      0|			name##_ = *((type *)(it->second.get()->getData())); \
+  |   34|      0|		}                                                       \
+  |   35|      1|	}
+  ------------------
+   36|       |
+   37|       |class Config {
+   38|       |	static std::atomic_bool inited;
+   39|       |	static Config *instance;
+   40|       |	utils::JsonMap map_;
+   41|       |	CONFIG_PROP(std::string, logger_file_name, "co_uring_http")
+   42|       |	CONFIG_PROP(std::string, logger_output_dir, "/home/zhouheng/C++/co_uring_http/log")
+   43|       |	CONFIG_PROP(std::string, http_dir, "/home/zhouheng/C++/co_uring_http/public")
+   44|       |   public:
+   45|       |	static void init(const std::string &config_file);
+   46|       |	static Config &getInstance();
+   47|       |};
+   48|       |}  // namespace co_uring_web
+
+/home/zhouheng/C++/co_uring_http/include/core.h:
+    1|       |/**
+    2|       | *@文件    :core.h
+    3|       | *@时间    :2022/01/19 13:45:32
+    4|       | *@作者    :周恒
+    5|       | *@版本    :1.0
+    6|       | *@说明    :🤣
+    7|       | **/
+    8|       |
+    9|       |#include <fcntl.h>
+   10|       |#include <liburing.h>
+   11|       |#include <netinet/in.h>
+   12|       |#include <sys/cdefs.h>
+   13|       |#include <sys/epoll.h>
+   14|       |
+   15|       |#include <cassert>
+   16|       |#include <cstddef>
+   17|       |#include <cstdint>
+   18|       |#include <cstdio>
+   19|       |#include <cstdlib>
+   20|       |#include <experimental/coroutine>
+   21|       |#include <memory>
+   22|       |#include <thread>
+   23|       |#include <type_traits>
+   24|       |#include <unordered_map>
+   25|       |#include <utility>
+   26|       |#include <vector>
+   27|       |
+   28|       |#include "lockfree_queue.h"
+   29|       |#include "logger.h"
+   30|       |#include "timer.h"
+   31|       |namespace co_uring_web::core {
+   32|       |
+   33|       |enum class IoRequestOp : int { OP_READ, OP_WRITE };
+   34|       |struct IoRequest {
+   35|       |	char *data {nullptr};
+   36|       |	uint32_t capicaty {0};
+   37|       |	uint32_t size {0};
+   38|       |	int32_t fd {0};
+   39|       |	int32_t retCode {0};
+   40|       |	void *context {nullptr};
+   41|       |	IoRequestOp op;
+   42|       |	int timeout {0};
+   43|       |};
+   44|      0|inline int setNonblocking(int fd) {
+   45|      0|	int oldOption = fcntl(fd, F_GETFL);  // NOLINT
+   46|      0|	int newOption = oldOption | O_NONBLOCK;
+   47|      0|	fcntl(fd, F_SETFL, newOption);
+   48|      0|	return oldOption;
+   49|      0|}
+   50|       |struct TcpConnection {
+   51|       |	sockaddr_in remoteAddr;
+   52|       |	int fd;
+   53|       |	void *context;
+   54|       |};
+   55|       |
+   56|       |class EpollScheduler {
+   57|       |	uint64_t ioIndex_ {0};
+   58|       |	std::unordered_map<uint64_t, void *> ioIndex2req_;
+   59|       |	int epollfd_;
+   60|       |	// std::vector<IoRequest *> uncompletedReqs;
+   61|       |	std::vector<void *> completedHandleAddrs_;
+   62|       |	static constexpr uint32_t EpollTimeoutMiliseconds = 1;  //超时设置成1毫秒
+   63|       |	TimerQueue timerQueue_;
+   64|       |
+   65|       |   public:
+   66|       |	void handleWrite(IoRequest &req);
+   67|       |	void handleRead(IoRequest &req);
+   68|       |	void poll(std::vector<void *> &readyHandleAddrs);
+   69|       |	EpollScheduler();
+   70|       |	EpollScheduler(const EpollScheduler &) = delete;
+   71|       |	EpollScheduler(EpollScheduler &&) = default;
+   72|       |	EpollScheduler &operator=(const EpollScheduler &) = delete;
+   73|      0|	EpollScheduler &operator=(EpollScheduler &&other) {
+   74|      0|		if (&other == this) return *this;
+   75|      0|		ioIndex_ = other.ioIndex_;
+   76|      0|		ioIndex2req_.swap(other.ioIndex2req_);
+   77|      0|		epollfd_ = other.epollfd_;
+   78|      0|		completedHandleAddrs_.swap(other.completedHandleAddrs_);
+   79|      0|		timerQueue_ = std::move(other.timerQueue_);
+   80|      0|		return *this;
+   81|      0|	};
+   82|       |};
+   83|       |
+   84|       |class UringScheduler {
+   85|       |	uint64_t ioIndex_ {1};
+   86|       |	std::unordered_map<uint64_t, void *> ioIndex2req_;
+   87|       |	static constexpr uint32_t UringSize = 2048;            // io_uring队列深度
+   88|       |	static constexpr uint32_t UringTimeoutMiliseconds = 1;  //超时设置成1毫秒
+   89|       |	io_uring uring_;
+   90|       |	TimerQueue timerQueue_;
+   91|       |
+   92|       |   public:
+   93|       |	void handleWrite(IoRequest &req);
+   94|       |	void handleRead(IoRequest &req);
+   95|       |	void poll(std::vector<void *> &readyHandleAddrs);
+   96|       |	UringScheduler();
+   97|       |	UringScheduler(const UringScheduler &) = delete;
+   98|       |	UringScheduler(UringScheduler &&) = default;
+   99|       |	UringScheduler &operator=(const UringScheduler &) = delete;
+  100|      0|	UringScheduler &operator=(UringScheduler &&other) {
+  101|      0|		if (this == &other) [[unlikely]]
+  102|      0|			return *this;
+  103|      0|		ioIndex_ = other.ioIndex_;
+  104|      0|		ioIndex2req_.swap(other.ioIndex2req_);
+  105|      0|		uring_ = other.uring_;
+  106|      0|		timerQueue_ = std::move(other.timerQueue_);
+  107|      0|		return *this;
+  108|      0|	};
+  109|       |	private:
+  110|      0|	inline void addTimeout(){
+  111|      0|	__kernel_timespec ts = {.tv_sec = 0, .tv_nsec = UringTimeoutMiliseconds * 1000};
+  112|      0|	io_uring_sqe *sqe = io_uring_get_sqe(&uring_);sqe=io_uring_get_sqe(&uring_);
+  113|      0|	io_uring_prep_timeout(sqe, &ts, 1, IORING_TIMEOUT_ABS);
+  114|      0|	io_uring_submit(&uring_);
+  115|      0|	}
+  116|       |};
+  117|       |
+  118|       |template <class SchdulerImpl>
+  119|       |class ScheduleImpl_SFINAE {
+  120|       |   public:
+  121|       |	static constexpr bool check_func_handle_write =
+  122|       |	    std::is_member_function_pointer<decltype(&SchdulerImpl::handleWrite)>::value &&
+  123|       |	    std::is_same<decltype(std::declval<SchdulerImpl>().handleWrite(
+  124|       |	                     std::declval<IoRequest &>())),void>::value;
+  125|       |	static constexpr bool check_func_handle_read =
+  126|       |	    std::is_member_function_pointer<decltype(&SchdulerImpl::handleRead)>::value &&
+  127|       |	    std::is_same<decltype(std::declval<SchdulerImpl>().handleRead(std::declval<IoRequest &>())),
+  128|       |	                 void>::value;
+  129|       |	static constexpr bool check_func_poll =
+  130|       |	    std::is_member_function_pointer<decltype(&SchdulerImpl::poll)>::value &&
+  131|       |	    std::is_same<decltype(std::declval<SchdulerImpl>().poll(
+  132|       |	                     std::declval<std::vector<void *> &>())),
+  133|       |	                 void>::value;
+  134|       |	;
+  135|       |	static constexpr bool value =
+  136|       |	    check_func_handle_write && check_func_handle_read && check_func_poll;
+  137|       |};
+  138|       |
+  139|       |template <class SchedulerImpl, class TaskImpl,
+  140|       |          bool Match = ScheduleImpl_SFINAE<SchedulerImpl>::value>
+  141|       |class Scheduler;
+  142|       |template <class SchedulerImpl, class TaskImpl>
+  143|       |class Scheduler<SchedulerImpl, TaskImpl, false> {};
+  144|       |template <class SchedulerImpl, class TaskImpl>
+  145|       |class Scheduler<SchedulerImpl, TaskImpl, true> {
+  146|       |	SchedulerImpl impl_;
+  147|       |	LockfreeQueue<TcpConnection> *queue_;
+  148|       |	using CoroFunc = TaskImpl (*)(TcpConnection, Scheduler<SchedulerImpl, TaskImpl> *);
+  149|       |	CoroFunc func_;
+  150|       |
+  151|       |   public:
+  152|      1|	Scheduler(LockfreeQueue<TcpConnection> *queue, CoroFunc func) : queue_(queue), func_(func) {}
+  153|       |	struct AsyncWrite {
+  154|       |		IoRequest *req;
+  155|       |
+  156|       |		Scheduler<SchedulerImpl, TaskImpl, true> *scheduler;
+  157|   600k|		inline bool await_ready() noexcept { return false; }
+  158|       |		inline void
+  159|   600k|		await_suspend(std::experimental::coroutine_handle<typename TaskImpl::promise_type> h) {
+  160|   600k|			req->context = h.address();
+  161|   600k|			req->op = IoRequestOp::OP_WRITE;
+  162|   600k|			scheduler->impl_.handleWrite(*req);
+  163|   600k|		}
+  164|   600k|		inline IoRequest *await_resume() { return req; }
+  165|       |	};
+  166|       |	struct AsyncRead {
+  167|       |		IoRequest *req;
+  168|       |		Scheduler<SchedulerImpl, TaskImpl, true> *scheduler;
+  169|       |
+  170|   602k|		inline bool await_ready() noexcept { return false; }
+  171|       |		inline void
+  172|   602k|		await_suspend(std::experimental::coroutine_handle<typename TaskImpl::promise_type> h) {
+  173|   602k|			req->context = h.address();
+  174|   602k|			req->op = IoRequestOp::OP_READ;
+  175|   602k|			scheduler->impl_.handleRead(*req);
+  176|   602k|		}
+  177|   602k|		inline IoRequest *await_resume() { return req; }
+  178|       |	};
+  179|       |
+  180|   600k|	inline AsyncWrite asyncWrite(IoRequest *req) {
+  181|   600k|		if (req->size == 0) {
+  182|      0|			LOG_FATAL << "req的size不能为0!";
+  183|      0|			abort();
+  184|      0|		}
+  185|   600k|		return AsyncWrite {.req = req, .scheduler = this};
+  186|   600k|	}
+  187|   602k|	inline AsyncRead asyncRead(IoRequest *req) { return AsyncRead {.req = req, .scheduler = this}; }
+  188|       |
+  189|      1|	__attribute__((noreturn)) void loop() {
+  190|      1|		std::vector<void *> readyHandleAddrs;
+  191|      1|		readyHandleAddrs.reserve(100000);
+  192|  2.13k|		while (true) {
+  193|  2.13k|			readyHandleAddrs.clear();
+  194|  2.13k|			TcpConnection conn = {0};
+  195|   604k|			while (queue_->pop(conn)) {
+  196|   602k|				func_(conn, this);
+  197|   602k|			}
+  198|  2.13k|			impl_.poll(readyHandleAddrs);
+  199|  1.20M|			for (auto *addr : readyHandleAddrs) {
+  200|  1.20M|				auto handle = std::experimental::coroutine_handle<
+  201|  1.20M|				    typename TaskImpl::promise_type>::from_address(addr);
+  202|  1.20M|				handle.resume();
+  203|       |				
+  204|  1.20M|			}
+  205|  2.13k|		}
+  206|      1|	}
+  207|       |};
+  208|       |template <class SchedulerImpl, class TaskImpl>
+  209|       |class TcpServer {
+  210|       |	int port_;  //端口
+  211|       |	int sock_;  // socket fd
+  212|       |	using CoroFunc = TaskImpl (*)(TcpConnection, Scheduler<SchedulerImpl, TaskImpl> *);
+  213|       |	CoroFunc func_;  //协程执行函数
+  214|       |	static constexpr int defaultThreadCount = 4;
+  215|       |	LockfreeQueue<TcpConnection> *queues_;  //用于传递主线程accept的tcp连接到工作线程
+  216|       |	std::thread *threads_;                  //工作线程
+  217|       |	int thread_count_;
+  218|       |
+  219|       |   public:
+  220|       |	TcpServer(int port, int thread_count, CoroFunc func)
+  221|      1|	    : port_(port), thread_count_(thread_count), func_(func) {
+  222|      1|		struct sockaddr_in srv_addr;
+  223|      1|		sock_ = socket(PF_INET, SOCK_STREAM, 0);
+  224|      1|		if (sock_ == -1) {
+  225|      0|			perror("socket()");
+  226|      0|			assert(0);
+  227|      0|			abort();
+  228|      0|		}
+  229|       |
+  230|      1|		int enable = 1;
+  231|      1|		if (setsockopt(sock_, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+  232|      0|			perror("setsockopt");
+  233|      0|			assert(0);
+  234|      0|			abort();
+  235|      0|		}
+  236|      1|		memset(&srv_addr, 0, sizeof(srv_addr));
+  237|      1|		srv_addr.sin_family = AF_INET;
+  238|      1|		srv_addr.sin_port = htons(port);
+  239|      1|		srv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  240|      1|		if (bind(sock_, (const struct sockaddr *)&srv_addr, sizeof(srv_addr)) < 0) {
+  241|      0|			perror("bind()");
+  242|      0|			assert(0);
+  243|      0|			abort();
+  244|      0|		}
+  245|       |
+  246|      1|		if (listen(sock_, 23333) < 0) {
+  247|      0|			perror("listen()");
+  248|      0|			assert(0);
+  249|      0|			abort();
+  250|      0|		}
+  251|       |
+  252|      1|		queues_ = (LockfreeQueue<TcpConnection> *)malloc(thread_count *
+  253|      1|		                                                 sizeof(LockfreeQueue<TcpConnection>));
+  254|      2|		for (int i = 0; i < thread_count; ++i) {
+  255|      1|			new (queues_ + i) LockfreeQueue<TcpConnection>();
+  256|      1|		}
+  257|      1|		threads_ = (std::thread *)malloc(thread_count * sizeof(std::thread));
+  258|       |		//必须要在把queues_和threads_写入内存之后才能启动新线程，确保可见性
+  259|      1|		asm volatile("mfence" ::: "memory");
+  260|      2|		for (int i = 0; i < thread_count; ++i) {
+  261|      1|			new (threads_ + i) std::thread(
+  262|      1|			    [&](int i) {
+  263|      1|				    Scheduler<SchedulerImpl, TaskImpl> scheduler(&(queues_[i]), func_);
+  264|      1|				    scheduler.loop();
+  265|      1|			    },
+  266|      1|			    i);
+  267|      1|		}
+  268|      1|	};
+  269|       |	TcpServer();
+  270|      1|	void run() {
+  271|      1|		uint64_t index = 0;
+  272|   602k|		while (true) {
+  273|   602k|			TcpConnection tcpConn = {};
+  274|   602k|			socklen_t len = sizeof(tcpConn.remoteAddr);
+  275|       |			//主线程始终监听socket并接受新连接。
+  276|   602k|			tcpConn.fd = ::accept(sock_, (sockaddr *)&(tcpConn.remoteAddr), &len);  // NOLINT
+  277|   602k|			if (tcpConn.fd == -1) continue;
+  278|   602k|			while (!(queues_[index % thread_count_].push(tcpConn))) {
+  279|       |				//不成功的话，说明已经满了
+  280|      0|				index += 1;
+  281|      0|			};
+  282|   602k|			index++;
+  283|   602k|		}
+  284|      1|	};
+  285|       |};
+  286|       |}  // namespace co_uring_web::core
+
+/home/zhouheng/C++/co_uring_http/include/http.h:
+    1|       |/**
+    2|       | *@文件    :http.h
+    3|       | *@时间    :2022/01/27 16:01:19
+    4|       | *@作者    :周恒
+    5|       | *@版本    :1.0
+    6|       | *@说明    :
+    7|       | **/
+    8|       |
+    9|       |#pragma once
+   10|       |#include <fcntl.h>
+   11|       |#include <netinet/in.h>
+   12|       |#include <unistd.h>
+   13|       |#include <zlib.h>
+   14|       |
+   15|       |#include <cerrno>
+   16|       |#include <cstddef>
+   17|       |#include <cstdint>
+   18|       |#include <cstdio>
+   19|       |#include <cstdlib>
+   20|       |#include <cstring>
+   21|       |#include <experimental/coroutine>
+   22|       |#include <filesystem>
+   23|       |#include <memory>
+   24|       |#include <string>
+   25|       |#include <string_view>
+   26|       |#include <utility>
+   27|       |
+   28|       |#include "config.h"
+   29|       |#include "core.h"
+   30|       |#include "logger.h"
+   31|       |#include "utils.h"
+   32|       |namespace co_uring_web {
+   33|       |static constexpr std::string_view ServerString = "co_uring_httpd/0.1";
+   34|       |static constexpr char content400[] =
+   35|       |    "HTTP/1.0 400 Bad Request\r\n"
+   36|       |    "Content-type: text/html\r\n"
+   37|       |    "\r\n"
+   38|       |    "<html>"
+   39|       |    "<head>"
+   40|       |    "<title>co_uring_httpd: Unimplemented</title>"
+   41|       |    "</head>"
+   42|       |    "<body>"
+   43|       |    "<h1>Bad Request (Unimplemented)</h1>"
+   44|       |    "<p>Your client sent a request co_uring_httpd did not understand and it is probably not your "
+   45|       |    "fault.</p>"
+   46|       |    "</body>"
+   47|       |    "</html>";
+   48|       |static constexpr char content404[] =
+   49|       |    "HTTP/1.0 404 Not Found\r\n"
+   50|       |    "Content-type: text/html\r\n"
+   51|       |    "\r\n"
+   52|       |    "<html>"
+   53|       |    "<head>"
+   54|       |    "<title>co_uring_httpd: Not Found</title>"
+   55|       |    "</head>"
+   56|       |    "<body>"
+   57|       |    "<h1>Not Found (404)</h1>"
+   58|       |    "<p>Your client is asking for an object that was not found on this server.</p>"
+   59|       |    "</body>"
+   60|       |    "</html>";
+   61|       |enum HttpMethod { METHOD_NOTHING = 0, GET, POST, HEAD, PUT, PATCH, DELETE };
+   62|       |enum HttpVersion { VERSION_NOTHING = 0, V9, V10, V11 };
+   63|       |enum HttpResponseStatusCodes {
+   64|       |	C000 = 0,
+   65|       |	C100 = 100,  // Continue
+   66|       |	C101 = 101,  // Switching Protocols
+   67|       |	C102 = 102,  // Processing (WebDAV; RFC 2518)
+   68|       |	C103 = 103,  // Early Hints (RFC 8297)
+   69|       |	C200 = 200,  // OK
+   70|       |	C201 = 201,  // Created
+   71|       |	C202 = 202,  // Accepted
+   72|       |	C203 = 203,  // Non-Authoritative Information (since HTTP/1.1)
+   73|       |	C204 = 204,  // No Content
+   74|       |	C205 = 205,  // Reset Content
+   75|       |	C206 = 206,  // Partial Content (RFC 7233)
+   76|       |	C207 = 207,  // Multi-Status (WebDAV; RFC 4918)
+   77|       |	C208 = 208,  // Already Reported (WebDAV; RFC 5842)
+   78|       |	C226 = 226,  // IM Used (RFC 3229)
+   79|       |	C300 = 300,  // Multiple Choices
+   80|       |	C301 = 301,  // Moved Permanently
+   81|       |	C302 = 302,  // Found (Previously "Moved temporarily")
+   82|       |	C303 = 303,  // See Other (since HTTP/1.1)
+   83|       |	C304 = 304,  // Not Modified (RFC 7232)
+   84|       |	C305 = 305,  // Use Proxy (since HTTP/1.1)
+   85|       |	C306 = 306,  // Switch Proxy
+   86|       |	C307 = 307,  // Temporary Redirect (since HTTP/1.1)
+   87|       |	C308 = 308,  // Permanent Redirect (RFC 7538)
+   88|       |	C400 = 400,  // Bad Request
+   89|       |	C401 = 401,  // Unauthorized (RFC 7235)
+   90|       |	C402 = 402,  // Payment Required
+   91|       |	C403 = 403,  // Forbidden
+   92|       |	C404 = 404,  // Not Found
+   93|       |	C405 = 405,  // Method Not Allowed
+   94|       |	C406 = 406,  // Not Acceptable
+   95|       |	C407 = 407,  // Proxy Authentication Required (RFC 7235)
+   96|       |	C408 = 408,  // Request Timeout
+   97|       |	C409 = 409,  // Conflict
+   98|       |	C410 = 410,  // Gone
+   99|       |	C411 = 411,  // Length Required
+  100|       |	C412 = 412,  // Precondition Failed (RFC 7232)
+  101|       |	C413 = 413,  // Payload Too Large (RFC 7231)
+  102|       |	C414 = 414,  // URI Too Long (RFC 7231)
+  103|       |	C415 = 415,  // Unsupported Media Type (RFC 7231)
+  104|       |	C416 = 416,  // Range Not Satisfiable (RFC 7233)
+  105|       |	C417 = 417,  // Expectation Failed
+  106|       |	C418 = 418,  // I'm a teapot (RFC 2324, RFC 7168)
+  107|       |	C421 = 421,  // Misdirected Request (RFC 7540)
+  108|       |	C422 = 422,  // Unprocessable Entity (WebDAV; RFC 4918)
+  109|       |	C423 = 423,  // Locked (WebDAV; RFC 4918)
+  110|       |	C424 = 424,  // Failed Dependency (WebDAV; RFC 4918)
+  111|       |	C425 = 425,  // Too Early (RFC 8470)
+  112|       |	C426 = 426,  // Upgrade Required
+  113|       |	C428 = 428,  // Precondition Required (RFC 6585)
+  114|       |	C429 = 429,  // Too Many Requests (RFC 6585)
+  115|       |	C431 = 431,  // Request Header Fields Too Large (RFC 6585)
+  116|       |	C451 = 451,  // Unavailable For Legal Reasons (RFC 7725)
+  117|       |	C500 = 500,  // Internal Server Error
+  118|       |	C501 = 501,  // Not Implemented
+  119|       |	C502 = 502,  // Bad Gateway
+  120|       |	C503 = 503,  // Service Unavailable
+  121|       |	C504 = 504,  // Gateway Timeout
+  122|       |	C505 = 505,  // HTTP Version Not Supported
+  123|       |	C506 = 506,  // Variant Also Negotiates (RFC 2295)
+  124|       |	C507 = 507,  // Insufficient Storage (WebDAV; RFC 4918)
+  125|       |	C508 = 508,  // Loop Detected (WebDAV; RFC 5842)
+  126|       |	C510 = 510,  // Not Extended (RFC 2774)
+  127|       |	C511 = 511   // Network Authentication Required (RFC 6585)
+  128|       |};
+  129|       |static constexpr int defaultHttpRequestReadBufferSize = 8192;
+  130|       |std::string_view getStatusText(HttpResponseStatusCodes code);
+  131|       |/**
+  132|       | * @brief Get the Content Type object 如果是未知类型返回空字符串
+  133|       | *
+  134|       | * @param fileExt
+  135|       | * @return std::string_view
+  136|       | */
+  137|       |std::string_view getContentType(std::string_view fileExt);
+  138|       |class HttpRequest {
+  139|       |	std::string url_;
+  140|       |	std::map<std::string, std::string> headers_;
+  141|       |	std::string body_;
+  142|       |	HttpMethod method_ {METHOD_NOTHING};
+  143|       |	HttpVersion version_ {VERSION_NOTHING};
+  144|       |
+  145|       |   public:
+  146|   600k|	[[nodiscard]] inline std::string getUrl() const {
+  147|   600k|		using namespace std;
+  148|   600k|		if (url_ == "/"sv) {
+  149|      0|			return "index.html";
+  150|      0|		}
+  151|   600k|		if (url_.front() == '/') {
+  152|   600k|			return url_.substr(1);
+  153|   600k|		}
+  154|      0|		return url_;
+  155|   600k|	};
+  156|      0|	inline void setUrl(const std::string &url) { url_ = url; }
+  157|      0|	inline void setUrl(std::string &&url) { url_.swap(url); }
+  158|       |
+  159|      0|	[[nodiscard]] inline HttpMethod getMethod() const { return method_; }
+  160|      0|	inline void setMethod(HttpMethod method) { method_ = method; };
+  161|       |
+  162|      0|	[[nodiscard]] inline std::string_view getBody() const { return body_; }
+  163|      0|	inline void setBody(const std::string &body) { body_ = body; }
+  164|      0|	inline void setBody(std::string &&body) { body_.swap(body); }
+  165|       |
+  166|      0|	[[nodiscard]] inline std::map<std::string, std::string> &getHeaders() { return headers_; }
+  167|      0|	inline void setHeaders(const std::map<std::string, std::string> &headers) {
+  168|      0|		headers_ = headers;
+  169|      0|	}
+  170|      0|	inline void setHeaders(std::map<std::string, std::string> &&headers) { headers_.swap(headers); }
+  171|       |	/**
+  172|       |	 * @brief Set the Header object 增加或设置一个header键值对
+  173|       |	 *
+  174|       |	 * @param key
+  175|       |	 * @param value
+  176|       |	 */
+  177|      0|	inline void setHeader(const std::string &key, const std::string &value) {
+  178|      0|		headers_.insert_or_assign(key, value);
+  179|      0|	}
+  180|       |	/**
+  181|       |	 * @brief Get the Header Value object 如果不存在，返回 ""
+  182|       |	 *
+  183|       |	 * @param key
+  184|       |	 * @return std::string
+  185|       |	 */
+  186|      0|	[[nodiscard]] inline std::string getHeaderValue(const std::string &key) const {
+  187|      0|		auto it = headers_.find(key);
+  188|      0|		if (it == headers_.end()) {
+  189|      0|			return {};
+  190|      0|		}
+  191|      0|		return it->second;
+  192|      0|	}
+  193|       |	static std::optional<HttpRequest> fromRawData(std::string_view raw);
+  194|       |};
+  195|       |class HttpResponse {
+  196|       |	HttpVersion version_;
+  197|       |	HttpResponseStatusCodes statusCode_;
+  198|       |	std::map<std::string, std::string> headers_;
+  199|       |	std::string body_;
+  200|       |
+  201|       |   public:
+  202|       |	HttpResponse(HttpVersion version = V10, HttpResponseStatusCodes status_code = C200)
+  203|   600k|	    : version_(version), statusCode_(status_code) {};
+  204|       |	HttpResponse(const HttpResponse &) = default;
+  205|       |	HttpResponse(HttpResponse &&) = default;
+  206|      0|	HttpResponse &operator=(const HttpResponse &other) {
+  207|      0|		if (this == &other) [[unlikely]]
+  208|      0|			return *this;
+  209|      0|		using namespace std;
+  210|      0|		version_ = other.version_;
+  211|      0|		statusCode_ = other.statusCode_;
+  212|      0|		headers_ = other.headers_;
+  213|      0|		body_ = other.body_;
+  214|      0|		return *this;
+  215|      0|	};
+  216|      0|	HttpResponse &operator=(HttpResponse &&other) {
+  217|      0|		if (this == &other) [[unlikely]]
+  218|      0|			return *this;
+  219|      0|		version_ = other.version_;
+  220|      0|		statusCode_ = other.statusCode_;
+  221|      0|		headers_.swap(other.headers_);
+  222|      0|		body_.swap(other.body_);
+  223|      0|		return *this;
+  224|      0|	};
+  225|      0|	inline void setVersion(HttpVersion version) { version_ = version; }
+  226|      0|	[[nodiscard]] inline HttpVersion getVersion() const { return version_; }
+  227|      0|	inline void setStatusCode(HttpResponseStatusCodes status_code) { statusCode_ = status_code; }
+  228|      0|	[[nodiscard]] inline HttpResponseStatusCodes getStatusCode() const { return statusCode_; }
+  229|      0|	inline void setHeaders(const std::map<std::string, std::string> &headers) {
+  230|      0|		headers_ = headers;
+  231|      0|	}
+  232|      0|	inline void setHeaders(std::map<std::string, std::string> &&headers) { headers_.swap(headers); }
+  233|      0|	[[nodiscard]] std::map<std::string, std::string> &getHeaders() { return headers_; }
+  234|  1.80M|	inline void setHeader(std::string_view key, std::string_view value) {
+  235|  1.80M|		headers_.insert_or_assign(std::string(key), std::string(value));
+  236|  1.80M|	}
+  237|      0|	[[nodiscard]] inline std::string getHeaderValue(const std::string &key) const {
+  238|      0|		auto it = headers_.find(key);
+  239|      0|		if (it == headers_.end()) {
+  240|      0|			return {};
+  241|      0|		}
+  242|      0|		return it->second;
+  243|      0|	}
+  244|      0|	inline void setBody(std::string &&body) { body_.swap(body); }
+  245|      0|	inline void setBody(const std::string &body) { body_ = body; }
+  246|      0|	[[nodiscard]] inline std::string_view getBody() const { return body_; }
+  247|       |	std::string toRawData();
+  248|       |	int getRawDataSizeWithoutBody();
+  249|       |	void toRawDataWithoutBody(char *buffer);
+  250|       |};
+  251|       |struct HttpTask {
+  252|       |	struct promise_type {
+  253|   602k|		HttpTask get_return_object() {
+  254|   602k|			return std::experimental::coroutine_handle<promise_type>::from_promise(*this);
+  255|   602k|		}
+  256|   602k|		auto initial_suspend() noexcept { return std::experimental::suspend_never {}; }
+  257|   602k|		auto final_suspend() noexcept { return std::experimental::suspend_never {}; }
+  258|      0|		void unhandled_exception() {};
+  259|   602k|		void return_void() {};
+  260|       |	};
+  261|       |	std::experimental::coroutine_handle<promise_type> handle;
+  262|   602k|	HttpTask(std::experimental::coroutine_handle<promise_type> h) : handle(h) {};
+  263|       |};
+  264|       |
+  265|       |template <class SchedulerImpl>
+  266|       |using HttpScheduler = typename core::Scheduler<SchedulerImpl, HttpTask>;
+  267|       |
+  268|       |template <class SchedulerImpl>
+  269|   602k|static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<SchedulerImpl> *scheduler) {
+  270|   602k|	using namespace std;
+  271|   602k|	using namespace core;
+  272|   602k|	namespace fs = filesystem;
+  273|       |	//先读
+  274|   602k|	IoRequest req = {};
+  275|   602k|	unique_ptr<char[]> reqBuff = std::make_unique<char[]>(defaultHttpRequestReadBufferSize);
+  276|   602k|	req.data = reqBuff.get();
+  277|   602k|	req.capicaty = defaultHttpRequestReadBufferSize;
+  278|   602k|	req.fd = conn.fd;
+  279|   602k|	req.timeout=0;
+  280|   602k|	co_await scheduler->asyncRead(&req);
+  281|   602k|	if (req.retCode <= 0) {
+  282|  2.49k|		LOG_WARN << "http 读异常,来自 " << utils::addr2str(conn.remoteAddr) << ':'
+  283|  2.49k|		         << ntohs(conn.remoteAddr.sin_port);
+  284|  2.49k|		close(conn.fd);
+  285|  2.49k|		co_return;
+  286|  2.49k|	}
+  287|       |	//解析http参数
+  288|   600k|	auto httpRequest = HttpRequest::fromRawData(string_view {req.data, (size_t)req.retCode});
+  289|       |
+  290|   600k|	if (!httpRequest.has_value()) {
+  291|      0|		LOG_WARN << "http request解析错误,来自 " << utils::addr2str(conn.remoteAddr) << ':'
+  292|      0|		         << ntohs(conn.remoteAddr.sin_port) << ' '
+  293|      0|		         << string_view {req.data, (size_t)req.retCode};
+  294|      0|		close(conn.fd);
+  295|      0|		co_return;
+  296|      0|	}
+  297|   600k|	auto url = httpRequest->getUrl();
+  298|   600k|	fs::path abspath = fs::path(Config::getInstance().get_http_dir()) / url;
+  299|       |	// fprintf(stderr, "%s",abspath.c_str());
+  300|   600k|	int fd = open(abspath.c_str(), O_RDONLY);
+  301|   600k|	if (fd == -1) {
+  302|      0|		int err = errno;
+  303|      0|		char errBuff[64];
+  304|       |
+  305|      0|		LOG_INFO << "http打开文件路径失败: " << url << " " << strerror_r(err, errBuff, 64);
+  306|       |
+  307|      0|		IoRequest req={};
+  308|      0|		req.fd = conn.fd;
+  309|      0|		req.data = (char *)content404;
+  310|      0|		req.size = sizeof(content404);
+  311|      0|		req.timeout=0;
+  312|      0|		co_await scheduler->asyncWrite(&req);
+  313|      0|		close(conn.fd);
+  314|      0|		co_return;
+  315|      0|	}
+  316|   600k|	int fileSize = utils::getFileSizeByFd(fd);
+  317|       |
+  318|   600k|	if (fileSize == -1) {
+  319|      0|		int err = errno;
+  320|      0|		char errBuff[64];
+  321|      0|		close(fd);
+  322|      0|		LOG_INFO << "http打开文件路径失败: " << url << " " << strerror_r(err, errBuff, 64);
+  323|       |
+  324|      0|		IoRequest req={};
+  325|      0|		req.fd = conn.fd;
+  326|      0|		req.data = (char *)content404;
+  327|      0|		req.size = sizeof(content404);
+  328|      0|		req.timeout=0;
+  329|      0|		co_await scheduler->asyncWrite(&req);
+  330|      0|		close(conn.fd);
+  331|      0|		co_return;
+  332|      0|	}
+  333|   600k|	auto response = HttpResponse();
+  334|       |
+  335|   600k|	auto fileExtnameStart = url.find_last_of('.');
+  336|   600k|	if (fileExtnameStart != string_view::npos) {
+  337|   600k|		fileExtnameStart += 1;
+  338|   600k|		auto fileExtname = url.substr(fileExtnameStart);
+  339|   600k|		auto contentType = getContentType(fileExtname);
+  340|   600k|		if (!contentType.empty()) {
+  341|   600k|			response.setHeader("Content-Type"sv, contentType);
+  342|   600k|		}
+  343|   600k|	}
+  344|       |
+  345|   600k|	response.setHeader("server"sv, ServerString);
+  346|   600k|	response.setHeader("Content-Length"sv, to_string(fileSize));
+  347|   600k|	int headersSize = response.getRawDataSizeWithoutBody();
+  348|   600k|	auto res = std::make_unique<char[]>(headersSize + fileSize);
+  349|       |
+  350|   600k|	response.toRawDataWithoutBody(res.get());
+  351|   600k|	int ret = read(fd, res.get() + headersSize, fileSize);
+  352|   600k|	if (ret == -1) {
+  353|      0|		int err = errno;
+  354|      0|		char errBuff[64];
+  355|      0|		close(fd);
+  356|      0|		LOG_INFO << "http读取文件失败: " << url << " " << strerror_r(err, errBuff, 64);
+  357|       |
+  358|      0|		IoRequest req;
+  359|      0|		req.fd = conn.fd;
+  360|      0|		req.data = (char *)content404;
+  361|      0|		req.size = sizeof(content404);
+  362|      0|		req.timeout=0;
+  363|      0|		co_await scheduler->asyncWrite(&req);
+  364|      0|		close(conn.fd);
+  365|      0|		co_return;
+  366|      0|	}
+  367|   600k|	close(fd);
+  368|       |
+  369|       |	// response
+  370|   600k|	req = IoRequest {};
+  371|   600k|	req.fd = conn.fd;
+  372|   600k|	req.data = res.get();
+  373|   600k|	req.size = headersSize + fileSize;
+  374|   600k|	req.timeout=0;
+  375|   600k|	co_await scheduler->asyncWrite(&req);
+  376|   600k|	close(conn.fd);
+  377|   600k|	co_return;
+  378|   600k|};
+  379|       |}  // namespace co_uring_web
+
+/home/zhouheng/C++/co_uring_http/include/json.h:
+    1|       |#ifndef JSON_H
+    2|       |#define JSON_H
+    3|       |
+    4|       |//# -*- encoding: utf-8 -*-
+    5|       |//'''
+    6|       |//@文件    :json.h
+    7|       |//@说明    :
+    8|       |//@时间    :2021/01/16 22:59:39
+    9|       |//@作者    :周恒
+   10|       |//@版本    :1.0
+   11|       |//'''
+   12|       |//
+   13|       |//
+   14|       |#pragma once
+   15|       |#include <exception>
+   16|       |#include <map>
+   17|       |#include <memory>
+   18|       |#include <optional>
+   19|       |#include <sstream>
+   20|       |#include <string>
+   21|       |#include <string_view>
+   22|       |#include <utility>
+   23|       |#include <vector>
+   24|       |namespace co_uring_web::utils {
+   25|       |class JsonTypeError : public std::runtime_error {
+   26|       |   public:
+   27|      0|	JsonTypeError() : std::runtime_error("json类型错误") {};
+   28|      0|	JsonTypeError(const std::string &s) : std::runtime_error(s) {};
+   29|       |	// virtual const char* what() const noexcept { return msg.c_str(); }
+   30|       |	~JsonTypeError() override = default;
+   31|       |};
+   32|       |class JsonObj {
+   33|       |   public:
+   34|       |	enum class JsonBaseType {
+   35|       |		JsonNull = 0,
+   36|       |		JsonBoolType = 1,
+   37|       |		JsonStringType = 2,
+   38|       |		JsonIntegerType,
+   39|       |		JsonDoubleType,
+   40|       |		JsonArrayType,
+   41|       |		JsonMapType
+   42|       |	};
+   43|       |	JsonBaseType jsonBaseType {JsonBaseType::JsonNull};
+   44|      1|	JsonObj() = default;
+   45|      6|	JsonObj(JsonBaseType type) : jsonBaseType(type) {};
+   46|       |
+   47|      3|	virtual ~JsonObj() noexcept = default;
+   48|       |	JsonObj &operator[](int index);
+   49|       |	JsonObj &operator[](const std::string &str);
+   50|       |	JsonObj &operator[](std::string &&str);
+   51|       |	void *getData();
+   52|       |};
+   53|       |
+   54|       |class JsonString : public JsonObj {
+   55|       |   public:
+   56|       |	std::string data;
+   57|      0|	JsonString() : JsonObj(JsonBaseType::JsonStringType) {};
+   58|       |	JsonString(const JsonString &s) = default;
+   59|       |	JsonString(JsonString &&) noexcept = default;
+   60|       |	JsonString &operator=(const JsonString &) = default;
+   61|      0|	JsonString &operator=(JsonString &&other) noexcept{
+   62|      0|		if(this==&other) [[unlikely]] return *this;
+   63|      0|		data.swap(other.data);
+   64|      0|		return *this;
+   65|      0|	};
+   66|      0|	inline JsonString &operator=(const std::string &s) {
+   67|      0|		data = s;
+   68|      0|		return *this;
+   69|      0|	}
+   70|      0|	inline JsonString &operator=(std::string &&s) {
+   71|      0|		if (&(this->data) == &s) [[unlikely]]
+   72|      0|			return *this;
+   73|      0|		data = std::move(s);
+   74|      0|		return *this;
+   75|      0|	}
+   76|      0|	JsonString(const std::string& s) : JsonObj(JsonBaseType::JsonStringType), data(s) {};
+   77|      4|	JsonString(std::string &&s) : JsonObj(JsonBaseType::JsonStringType), data(std::move(s)) {};
+   78|       |
+   79|      0|	operator std::string() noexcept { return data; }
+   80|      0|	operator std::string_view() noexcept { return std::string_view(data); }
+   81|       |
+   82|      2|	~JsonString() override = default;
+   83|       |};
+   84|       |class JsonInteger : public JsonObj {
+   85|       |   public:
+   86|       |	int64_t data {0};
+   87|      0|	JsonInteger() : JsonObj(JsonBaseType::JsonIntegerType) {};
+   88|      0|	JsonInteger(int64_t num) : JsonObj(JsonBaseType::JsonIntegerType), data(num) {};
+   89|       |	JsonInteger(const JsonInteger &) = default;
+   90|       |	JsonInteger(JsonInteger &&) noexcept = default;
+   91|       |	JsonInteger &operator=(const JsonInteger &) = default;
+   92|       |	JsonInteger &operator=(JsonInteger &&) noexcept = default;
+   93|      0|	operator int64_t() { return data; }
+   94|       |
+   95|       |	~JsonInteger() override = default;
+   96|       |};
+   97|       |class JsonDouble : public JsonObj {
+   98|       |   public:
+   99|       |	double data {0};
+  100|      0|	JsonDouble() : JsonObj(JsonBaseType::JsonDoubleType) {}
+  101|      0|	JsonDouble(double num) : JsonObj(JsonBaseType::JsonDoubleType), data(num) {};
+  102|       |	JsonDouble(const JsonDouble &) = default;
+  103|       |	JsonDouble(JsonDouble &&) noexcept = default;
+  104|       |	JsonDouble &operator=(const JsonDouble &) = default;
+  105|       |	JsonDouble &operator=(JsonDouble &&) noexcept = default;
+  106|      0|	operator double() { return data; }
+  107|       |	~JsonDouble() override = default;
+  108|       |};
+  109|       |class JsonBool : public JsonObj {
+  110|       |   public:
+  111|       |	bool data {false};
+  112|       |
+  113|      0|	JsonBool() : JsonObj(JsonBaseType::JsonBoolType) {}
+  114|      0|	JsonBool(bool b) : JsonObj(JsonBaseType::JsonBoolType), data(b) {};
+  115|       |	JsonBool(const JsonBool &) = default;
+  116|       |	JsonBool(JsonBool &&) = default;
+  117|       |	JsonBool &operator=(const JsonBool &) = default;
+  118|       |	JsonBool &operator=(JsonBool &&) = default;
+  119|       |
+  120|       |	~JsonBool() override = default;
+  121|       |};
+  122|       |class JsonArray : public JsonObj {
+  123|       |   public:
+  124|       |	std::vector<std::unique_ptr<JsonObj>> data;
+  125|      0|	JsonArray() : JsonObj(JsonBaseType::JsonArrayType) {}
+  126|       |	JsonArray(const JsonArray &o);
+  127|       |	JsonArray(const std::vector<std::unique_ptr<JsonObj>> &vec);
+  128|       |	JsonArray(JsonArray &&o) noexcept = default;
+  129|       |	JsonArray(std::vector<std::unique_ptr<JsonObj>> &&vec) noexcept
+  130|       |	    : JsonObj(JsonBaseType::JsonArrayType),
+  131|      0|	      data(std::move(vec)) {
+  132|      0|
+  133|      0|	      };
+  134|       |	JsonArray &operator=(const JsonArray &o);
+  135|       |	JsonArray &operator=(JsonArray &&o) noexcept;
+  136|       |
+  137|      0|	~JsonArray() override = default;
+  138|       |	// operator std::vector<std::unique_ptr<JsonObj>>&();
+  139|       |	// JsonArray& operator=(const JsonArray&) = default;
+  140|       |};
+  141|       |class JsonMap : public JsonObj {
+  142|       |   public:
+  143|       |	using JsonMapImpl = std::map<std::string, std::unique_ptr<JsonObj>>;
+  144|       |	JsonMapImpl data;
+  145|      2|	JsonMap() : JsonObj(JsonBaseType::JsonMapType) {};
+  146|       |	JsonMap(const JsonMapImpl &m);
+  147|      0|	JsonMap(JsonMapImpl &&m) noexcept : JsonObj(JsonBaseType::JsonMapType), data(std::move(m)) {
+  148|      0|		jsonBaseType = JsonBaseType::JsonMapType;
+  149|      0|	};
+  150|       |	JsonMap(const JsonMap &o);
+  151|       |	JsonMap(JsonMap &&) noexcept = default;
+  152|       |	JsonMap &operator=(const JsonMap &o);
+  153|       |	JsonMap &operator=(JsonMap &&o) noexcept;
+  154|      0|	~JsonMap() override = default;
+  155|       |	//#TODO
+  156|       |};
+  157|       |
+  158|       |class JsonParseError : public std::runtime_error {
+  159|       |   public:
+  160|      0|	JsonParseError() : std::runtime_error("json parser error") {};
+  161|      0|	JsonParseError(const std::string &s) : std::runtime_error(s) {};
+  162|       |
+  163|       |	~JsonParseError() override = default;
+  164|       |};
+  165|       |class JsonParser {
+  166|       |	std::stringstream ss_;
+  167|       |
+  168|       |   public:
+  169|       |	std::unique_ptr<JsonObj> parse(const std::string_view view);
+  170|       |	std::string dump(const JsonObj *obj, int indent = 4);
+  171|       |
+  172|       |   private:
+  173|       |	inline std::unique_ptr<JsonObj> parseNum(const std::string_view view, ssize_t &startIndex);
+  174|       |	inline std::unique_ptr<JsonString> parseString(const std::string_view view,
+  175|       |	                                               ssize_t &startIndex);
+  176|       |	inline std::unique_ptr<JsonMap> parseMap(const std::string_view view, ssize_t &startIndex);
+  177|       |	std::unique_ptr<JsonArray> parseArray(const std::string_view view, ssize_t &startIndex);
+  178|       |	std::unique_ptr<JsonBool> parseBool(const std::string_view view, ssize_t &startIndex);
+  179|       |
+  180|       |	inline void dumpNum(const JsonObj *jn, std::string &res);
+  181|       |	inline void dumpString(const JsonString *js, std::string &res);
+  182|       |	inline void dumpString(const std::string_view view, std::string &res);
+  183|       |	void dumpMap(const JsonMap *jm, std::string &res, int depth, int indent, bool singleLine);
+  184|       |	void dumpArray(const JsonArray *ja, std::string &res, int depth, int indent, bool singleLine);
+  185|       |	inline void dumpBool(const JsonBool *jb, std::string &res);
+  186|      0|	inline void dumpNull(std::string &res) { res.append("null"); }
+  187|       |};
+  188|       |
+  189|       |}  // namespace co_uring_web::utils
+  190|       |   // std::map<std::string, std::unique_ptr<JsonObj>> data;
+  191|       |#endif
+
+/home/zhouheng/C++/co_uring_http/include/lockfree_queue.h:
+    1|       |/**
+    2|       | *@文件    :lockfree_queue.h
+    3|       | *@时间    :2022/01/19 18:47:25
+    4|       | *@作者    :周恒
+    5|       | *@版本    :1.0
+    6|       | *@说明    :
+    7|       | **/
+    8|       |
+    9|       |#pragma once
+   10|       |
+   11|       |#include <sys/cdefs.h>
+   12|       |
+   13|       |#include <atomic>
+   14|       |#include <cstdint>
+   15|       |#include <cstdlib>
+   16|       |#include <new>
+   17|       |#include <type_traits>
+   18|       |namespace co_uring_web {
+   19|       |
+   20|       |template <class T, bool is_trivial = std::is_trivial<T>::value>
+   21|       |class LockfreeQueue;
+   22|       |
+   23|       |template <class T>
+   24|       |class LockfreeQueue<T, false> {};
+   25|       |/**
+   26|       | * @brief 单生产者队列，只支持pod类型的元素
+   27|       | *
+   28|       | * @tparam T
+   29|       | */
+   30|       |template <class T>
+   31|       |class LockfreeQueue<T, true> {
+   32|       |	std::atomic<uint32_t> writeIndex_;
+   33|       |	std::atomic<uint32_t> readIndex_;
+   34|       |	uint32_t capicity_;
+   35|       |	T *queue_;
+   36|       |	static constexpr uint32_t DefaultCapicity = 25600;
+   37|       |	char padding[64];  //填充缓存行，防止伪共享
+   38|       |
+   39|       |   public:
+   40|  2.40M|	inline uint32_t count2Index(uint32_t count) { return count % capicity_; };
+   41|      1|	LockfreeQueue(uint32_t capicity) : capicity_(capicity) {
+   42|      1|		queue_ = (T *)malloc(capicity * sizeof(T));
+   43|      1|		writeIndex_.store(0);
+   44|      1|		readIndex_.store(0);
+   45|      1|	};
+   46|      1|	LockfreeQueue() : LockfreeQueue(DefaultCapicity) {};
+   47|   602k|	bool push(const T &data) {
+   48|   602k|		uint32_t currentWriteIndex = writeIndex_.load(std::memory_order_acquire);
+   49|   602k|		if (count2Index(currentWriteIndex + 1) == count2Index(readIndex_.load(std::memory_order_acquire))) return false;
+   50|   602k|		queue_[count2Index(currentWriteIndex)] = data;
+   51|   602k|		writeIndex_.fetch_add(1,std::memory_order_release);
+   52|   602k|		return true;
+   53|   602k|	};
+   54|   604k|	bool pop(T &data) {
+   55|   604k|		uint32_t currentReadIndex;
+   56|   604k|		do {
+   57|   604k|			currentReadIndex = readIndex_.load(std::memory_order_acquire);
+   58|   604k|			if (currentReadIndex  == writeIndex_.load(std::memory_order_acquire)) {
+   59|       |				//说明已经空了
+   60|  2.13k|				return false;
+   61|  2.13k|			}
+   62|   602k|			data = queue_[count2Index(currentReadIndex)];
+   63|   602k|			if (readIndex_.compare_exchange_strong(currentReadIndex, currentReadIndex + 1,std::memory_order_acq_rel)) {
+   64|       |				//假定有多个消费者，如果这个cas操作成功，那就意味着，data处必定为currentReadIndex处的数据，失败就意味着，已经被其他
+   65|       |				//消费者先获取。所以currentReadIndex处的数据可能被多个线程读取，所以元素类型的赋值过程绝不能影响源数据。
+   66|   602k|				return true;
+   67|   602k|			}
+   68|   602k|		} while (true);
+   69|      0|		return false;
+   70|   604k|	};
+   71|       |};
+   72|       |
+   73|       |}  // namespace co_uring_web
+
+/home/zhouheng/C++/co_uring_http/include/logger.h:
+    1|       |//# -*- encoding: utf-8 -*-
+    2|       |//'''
+    3|       |//@文件    :logger.h
+    4|       |//@时间    :2021/11/27 22:27:32
+    5|       |//@作者    :周恒
+    6|       |//@版本    :1.0
+    7|       |//@说明    :日志模块，日志应该是每个线程都可以写，使用dup2来进行rotate
+    8|       |//'''
+    9|       |//
+   10|       |#pragma once
+   11|       |
+   12|       |#include <bits/types/struct_iovec.h>
+   13|       |#include <pthread.h>
+   14|       |#include <strings.h>
+   15|       |#include <sys/stat.h>
+   16|       |#include <sys/types.h>
+   17|       |#include <sys/uio.h>
+   18|       |#include <unistd.h>
+   19|       |
+   20|       |#include <algorithm>
+   21|       |#include <array>
+   22|       |#include <chrono>
+   23|       |#include <cstddef>
+   24|       |#include <cstdint>
+   25|       |#include <cstdio>
+   26|       |#include <cstdlib>
+   27|       |#include <cstring>
+   28|       |#include <ctime>
+   29|       |#include <exception>
+   30|       |#include <filesystem>
+   31|       |#include <memory>
+   32|       |#include <mutex>
+   33|       |#include <string>
+   34|       |#include <string_view>
+   35|       |
+   36|       |#include "config.h"
+   37|       |namespace co_uring_web::utils {
+   38|       |class GlobalLoggerManager {
+   39|       |	static GlobalLoggerManager *instance;//单例，需要手动初始化
+   40|       |	int loggerFileFd_;
+   41|       |	std::thread *loggerThread;//日志线程
+   42|       |
+   43|       |   public:
+   44|       |	static void init();
+   45|  2.65k|	inline int getLoggerFileFd() noexcept { return loggerFileFd_; }
+   46|       |	/**
+   47|       |	 * @brief 检查是否需要进行滚动
+   48|       |	 * 
+   49|       |	 * @return true 
+   50|       |	 * @return false 
+   51|       |	 */
+   52|       |	bool checkNeedRotate();
+   53|       |
+   54|       |   private:
+   55|       |	/**
+   56|       |	 * @brief 没有扩展名
+   57|       |	 *
+   58|       |	 */
+   59|       |	std::string fileName_;
+   60|       |	std::string outputDir_;
+   61|       |	static constexpr const char *outputFileExtensionName = "log";
+   62|       |
+   63|       |	/**
+   64|       |	 * @brief 日志滚动，此函数目的是，当当前写入的日志文件{outputDir_/fileName_.log}的大小超过一个g之后，把这个文件重名成{outputDir_/fileName_.log1}
+   65|       |	 * 后面的文件以此类推，同时新建一个日志文件，并用dup2操作,把文件描述符loggerFileFd_重定向到新文件中
+   66|       |	 *
+   67|       |	 */
+   68|       |	void rotate();
+   69|       |
+   70|       |   public:
+   71|      0|	inline std::string getOutputDir() { return outputDir_; }
+   72|      1|	inline std::string getFileName() { return fileName_; }
+   73|      1|	GlobalLoggerManager()=default;
+   74|       |	GlobalLoggerManager(const GlobalLoggerManager &) = delete;
+   75|       |	GlobalLoggerManager(GlobalLoggerManager &&) = delete;
+   76|       |	static GlobalLoggerManager &getInstance();
+   77|       |};
+   78|       |enum LogLevel { TRACE, DEBUG, INFO, WARN, ERROR, FATAL };
+   79|       |
+   80|       |class LoggerInfoBuilder {
+   81|       |   public:
+   82|       |	static constexpr const char *LogLevelName[6] = {"TRACE ", "DEBUG ", "INFO  ",
+   83|       |	                                                "WARN  ", "ERROR ", "FATAL "};
+   84|       |	static constexpr int logInfoMaxSize = 512;                  //日志信息最大长度
+   85|       |	static constexpr int timeHeaderLength = 20;                 //日志信息固定头部长度
+   86|       |	thread_local static char timeHeader[timeHeaderLength + 1];  //日志头 每秒构建一次
+   87|       |	thread_local static time_t threadTime;  //线程本地的时间戳，以秒为单位
+   88|       |	thread_local static pthread_t threadId; 
+   89|       |	/**
+   90|       |	 * @brief iovecs_[0]是日志信息固定头部,iovecs_[1]才是具体的日志信息
+   91|       |	 * 
+   92|       |	 */
+   93|       |	iovec iovecs_[2] = {{nullptr, 0}, {nullptr, 0}};
+   94|  2.49k|	LoggerInfoBuilder() = default;
+   95|  2.49k|	~LoggerInfoBuilder() { free(iovecs_[1].iov_base); }
+   96|  2.49k|	void format(LogLevel level, const char *file, uint line, const char *func) {
+   97|  2.49k|		using namespace std;
+   98|  2.49k|		time_t t = std::time(nullptr);
+   99|  2.49k|		if (!threadId) {
+  100|      1|			threadId = pthread_self();
+  101|      1|		}
+  102|  2.49k|		if (t != LoggerInfoBuilder::threadTime) {
+  103|      1|			tm lt;
+  104|      1|			localtime_r(&t, &lt);
+  105|      1|			LoggerInfoBuilder::threadTime = t;
+  106|      1|			std::strftime(LoggerInfoBuilder::timeHeader, sizeof(LoggerInfoBuilder::timeHeader),
+  107|      1|			              "%F %T:", &lt);
+  108|      1|		}
+  109|       |		// memcpy(this->iovecs_[1].iov_base, timeHeader, timeHeaderLength);
+  110|  2.49k|		iovecs_[0].iov_base = timeHeader;
+  111|  2.49k|		iovecs_[0].iov_len = timeHeaderLength;
+  112|  2.49k|		iovecs_[1].iov_base = malloc(logInfoMaxSize);
+  113|  2.49k|		iovecs_[1].iov_len += snprintf(
+  114|  2.49k|		    (char *)iovecs_[1].iov_base, logInfoMaxSize,
+  115|  2.49k|		    "%.3lld [ %s - %s - %u ] [thread %lu] %s: ",
+  116|  2.49k|		    (chrono::high_resolution_clock::now().time_since_epoch().count() / 1000000) % 1000,
+  117|  2.49k|		    file, func, line, threadId, LogLevelName[(int)level]);
+  118|  2.49k|	}
+  119|  4.98k|	void build(const std::string_view view) {
+  120|  4.98k|		using namespace std;
+  121|  4.98k|		if (view.size() + 1 > logInfoMaxSize - iovecs_[1].iov_len) {
+  122|      0|			memcpy((char *)iovecs_[1].iov_base + iovecs_[1].iov_len, view.data(),
+  123|      0|			       logInfoMaxSize - iovecs_[1].iov_len);
+  124|      0|			iovecs_[1].iov_len = logInfoMaxSize;
+  125|  4.98k|		} else {
+  126|  4.98k|			memcpy((char *)iovecs_[1].iov_base + iovecs_[1].iov_len, view.data(), view.size());
+  127|  4.98k|			iovecs_[1].iov_len += view.size();
+  128|  4.98k|		}
+  129|  4.98k|		return;
+  130|  4.98k|	}
+  131|  2.49k|	void build(const std::string &s) { return build(std::string_view(s)); }
+  132|  2.49k|	void build(const char *str) {
+  133|  2.49k|		using namespace std;
+  134|  2.49k|		auto size = strlen(str);
+  135|  2.49k|		return build(string_view {str, size});
+  136|  2.49k|	}
+  137|      0|	void build(const std::exception &ex) {
+  138|      0|		return build(std::string_view {ex.what(), strlen(ex.what())});
+  139|      0|	}
+  140|  2.49k|	void build(int32_t num) {
+  141|  2.49k|		iovecs_[1].iov_len += snprintf((char *)iovecs_[1].iov_base + iovecs_[1].iov_len,
+  142|  2.49k|		                               logInfoMaxSize - iovecs_[1].iov_len, "%d", num);
+  143|  2.49k|		return;
+  144|  2.49k|	}
+  145|      0|	void build(uint32_t num) {
+  146|      0|		iovecs_[1].iov_len += snprintf((char *)iovecs_[1].iov_base + iovecs_[1].iov_len,
+  147|      0|		                               logInfoMaxSize - iovecs_[1].iov_len, "%u", num);
+  148|      0|		return;
+  149|      0|	}
+  150|      0|	void build(int64_t num) {
+  151|      0|		iovecs_[1].iov_len += snprintf((char *)iovecs_[1].iov_base + iovecs_[1].iov_len,
+  152|      0|		                               logInfoMaxSize - iovecs_[1].iov_len, "%ld", num);
+  153|      0|		return;
+  154|      0|	}
+  155|      0|	void build(uint64_t num) {
+  156|      0|		iovecs_[1].iov_len += snprintf((char *)iovecs_[1].iov_base + iovecs_[1].iov_len,
+  157|      0|		                               logInfoMaxSize - iovecs_[1].iov_len, "%lu", num);
+  158|      0|		return;
+  159|      0|	}
+  160|      0|	void build(float num){
+  161|      0|		iovecs_[1].iov_len += snprintf((char *)iovecs_[1].iov_base + iovecs_[1].iov_len,
+  162|      0|		                               logInfoMaxSize - iovecs_[1].iov_len, "%f", num);
+  163|      0|		return;
+  164|      0|	}
+  165|      0|	void build(double num){
+  166|      0|		iovecs_[1].iov_len += snprintf((char *)iovecs_[1].iov_base + iovecs_[1].iov_len,
+  167|      0|		                               logInfoMaxSize - iovecs_[1].iov_len, "%lf", num);
+  168|      0|		return;
+  169|      0|	}
+  170|  2.49k|	void build(char c) {
+  171|  2.49k|		if (iovecs_[1].iov_len < logInfoMaxSize)
+  172|  2.49k|			((char *)iovecs_[1].iov_base)[iovecs_[1].iov_len++] = c;
+  173|  2.49k|		return;
+  174|  2.49k|	}
+  175|       |};
+  176|       |/**
+  177|       | * @brief 日志等级为ERROR 或者 FATAL的，写完后将会立即flush
+  178|       | * 单个日志大小最大为1GB左右
+  179|       | *
+  180|       | */
+  181|       |class Logger {
+  182|       |	LoggerInfoBuilder builder_;
+  183|       |	LogLevel level_;
+  184|       |
+  185|       |   public:
+  186|       |	static constexpr size_t singleFileSizeLimit = 1<<30;
+  187|      0|	void checkFileSize() {}
+  188|       |
+  189|       |   public:
+  190|       |	friend LoggerInfoBuilder;
+  191|       |
+  192|  2.49k|	Logger(LogLevel level, const char *file, int line, const char *func) : level_(level) {
+  193|  2.49k|		builder_.format(level, file, line, func);
+  194|  2.49k|	}
+  195|       |	template <class T>
+  196|  9.96k|	Logger &operator<<(const T &data) {
+  197|  9.96k|		builder_.build(data);
+  198|  9.96k|		return *this;
+  199|  9.96k|	}
+  ------------------
+  | _ZN12co_uring_web5utils6LoggerlsIA23_cEERS1_RKT_:
+  |  196|  2.49k|	Logger &operator<<(const T &data) {
+  |  197|  2.49k|		builder_.build(data);
+  |  198|  2.49k|		return *this;
+  |  199|  2.49k|	}
+  ------------------
+  | _ZN12co_uring_web5utils6LoggerlsINSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEEERS1_RKT_:
+  |  196|  2.49k|	Logger &operator<<(const T &data) {
+  |  197|  2.49k|		builder_.build(data);
+  |  198|  2.49k|		return *this;
+  |  199|  2.49k|	}
+  ------------------
+  | _ZN12co_uring_web5utils6LoggerlsIcEERS1_RKT_:
+  |  196|  2.49k|	Logger &operator<<(const T &data) {
+  |  197|  2.49k|		builder_.build(data);
+  |  198|  2.49k|		return *this;
+  |  199|  2.49k|	}
+  ------------------
+  | _ZN12co_uring_web5utils6LoggerlsItEERS1_RKT_:
+  |  196|  2.49k|	Logger &operator<<(const T &data) {
+  |  197|  2.49k|		builder_.build(data);
+  |  198|  2.49k|		return *this;
+  |  199|  2.49k|	}
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsIA33_cEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsINSt3__117basic_string_viewIcNS3_11char_traitsIcEEEEEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsIA31_cEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsIA2_cEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsIPcEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsIA22_cEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsIA25_cEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsIA46_cEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsIiEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsIA6_cEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsIA8_cEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsIA14_cEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsISt12out_of_rangeEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsIA10_cEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsIA12_cEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsISt16invalid_argumentEERS1_RKT_
+  ------------------
+  | Unexecuted instantiation: _ZN12co_uring_web5utils6LoggerlsISt9exceptionEERS1_RKT_
+  ------------------
+  200|       |	// template<size_t Strlen>
+  201|       |	// Logger &operator<< (const char (&arr) [Strlen] ){
+  202|       |	// 	builder_.build(std::string_view{arr,Strlen});
+  203|       |	// }
+  204|       |
+  205|       |	// Logger &operator<<(std::string &&data) {
+  206|       |
+  207|       |	// };
+  208|       |	/**
+  209|       |	 * @brief Destroy the Logger object
+  210|       |	 *
+  211|       |	 */
+  212|  2.49k|	~Logger() {
+  213|  2.49k|		int len=std::min((int)builder_.iovecs_[1].iov_len,LoggerInfoBuilder::logInfoMaxSize-1);
+  214|  2.49k|		((char*)(builder_.iovecs_[1].iov_base))[len]='\n';
+  215|  2.49k|		builder_.iovecs_[1].iov_len++;
+  216|  2.49k|		writev(GlobalLoggerManager::getInstance().getLoggerFileFd(), builder_.iovecs_, 2);
+  217|  2.49k|		if (level_ > WARN) {
+  218|      0|			fsync(GlobalLoggerManager::getInstance().getLoggerFileFd());
+  219|      0|		}
+  220|       |	
+  221|  2.49k|	}
+  222|       |};
+  223|       |
+  224|       |}  // namespace co_uring_web::utils
+  225|       |#define LOG_TRACE (co_uring_web::utils::Logger(co_uring_web::utils::LogLevel::TRACE, __FILE__, __LINE__, __func__))  // NOLINT
+  226|       |#define LOG_DEBUG (co_uring_web::utils::Logger(co_uring_web::utils::LogLevel::DEBUG, __FILE__, __LINE__, __func__))  // NOLINT
+  227|      0|#define LOG_INFO (co_uring_web::utils::Logger(co_uring_web::utils::LogLevel::INFO, __FILE__, __LINE__, __func__))    // NOLINT
+  228|  12.4k|#define LOG_WARN (co_uring_web::utils::Logger(co_uring_web::utils::LogLevel::WARN, __FILE__, __LINE__, __func__))    // NOLINT
+  229|      0|#define LOG_ERROR (co_uring_web::utils::Logger(co_uring_web::utils::LogLevel::ERROR, __FILE__, __LINE__, __func__))  // NOLINT
+  230|      0|#define LOG_FATAL (co_uring_web::utils::Logger(co_uring_web::utils::LogLevel::FATAL, __FILE__, __LINE__, __func__))
+
+/home/zhouheng/C++/co_uring_http/include/utils.h:
+    1|       |#pragma once
+    2|       |#include <netinet/in.h>
+    3|       |#include <sys/stat.h>
+    4|       |#include <zlib.h>
+    5|       |
+    6|       |#include <cerrno>
+    7|       |#include <chrono>
+    8|       |#include <cstddef>
+    9|       |#include <cstdint>
+   10|       |#include <cstring>
+   11|       |#include <fstream>
+   12|       |#include <iterator>
+   13|       |#include <optional>
+   14|       |#include <ratio>
+   15|       |#include <sstream>
+   16|       |#include <stdexcept>
+   17|       |#include <string>
+   18|       |#include <string_view>
+   19|       |#include <vector>
+   20|       |namespace co_uring_web::utils {
+   21|       |std::string deflateCompress(std::string_view);
+   22|       |std::string deflateUncompress(std::string_view);
+   23|       |
+   24|   600k|static inline uint64_t stringHash(std::string_view str){
+   25|   600k|	constexpr uint64_t p = 31;
+   26|   600k|	constexpr uint64_t m = 1e9 + 9;
+   27|   600k|	uint64_t powerOfP = 1;
+   28|   600k|	uint64_t hashVal = 0;
+   29|  1.80M|	for (char i : str) {
+   30|  1.80M|		hashVal = (hashVal + (i - 'a' + 1) * powerOfP)%m;
+   31|  1.80M|		powerOfP=(powerOfP*p)%m;
+   32|  1.80M|	}
+   33|   600k|	return (hashVal%m+m)%m;
+   34|   600k|};
+  ------------------
+  | Unexecuted instantiation: static_web_http.cpp:_ZN12co_uring_web5utilsL10stringHashENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+  | Unexecuted instantiation: config.cpp:_ZN12co_uring_web5utilsL10stringHashENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+  | Unexecuted instantiation: core.cpp:_ZN12co_uring_web5utilsL10stringHashENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+  | http.cpp:_ZN12co_uring_web5utilsL10stringHashENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE:
+  |   24|   600k|static inline uint64_t stringHash(std::string_view str){
+  |   25|   600k|	constexpr uint64_t p = 31;
+  |   26|   600k|	constexpr uint64_t m = 1e9 + 9;
+  |   27|   600k|	uint64_t powerOfP = 1;
+  |   28|   600k|	uint64_t hashVal = 0;
+  |   29|  1.80M|	for (char i : str) {
+  |   30|  1.80M|		hashVal = (hashVal + (i - 'a' + 1) * powerOfP)%m;
+  |   31|  1.80M|		powerOfP=(powerOfP*p)%m;
+  |   32|  1.80M|	}
+  |   33|   600k|	return (hashVal%m+m)%m;
+  |   34|   600k|};
+  ------------------
+  | Unexecuted instantiation: json.cpp:_ZN12co_uring_web5utilsL10stringHashENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+  | Unexecuted instantiation: logger.cpp:_ZN12co_uring_web5utilsL10stringHashENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+  | Unexecuted instantiation: timer.cpp:_ZN12co_uring_web5utilsL10stringHashENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+  | Unexecuted instantiation: utils.cpp:_ZN12co_uring_web5utilsL10stringHashENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+   35|      0|static constexpr uint64_t stringHashConstexpr(const std::string_view &str) {
+   36|      0|	constexpr uint64_t p = 31;
+   37|      0|	constexpr uint64_t m = 1e9 + 9;
+   38|      0|	uint64_t powerOfP = 1;
+   39|      0|	uint64_t hashVal = 0;
+   40|      0|	for (char i : str) {
+   41|      0|		hashVal = (hashVal + (i - 'a' + 1) * powerOfP)%m;
+   42|      0|		powerOfP=(powerOfP*p)%m;
+   43|      0|	}
+   44|      0|	return (hashVal%m+m)%m;
+   45|      0|}
+  ------------------
+  | Unexecuted instantiation: static_web_http.cpp:_ZN12co_uring_web5utilsL19stringHashConstexprERKNSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+  | Unexecuted instantiation: config.cpp:_ZN12co_uring_web5utilsL19stringHashConstexprERKNSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+  | Unexecuted instantiation: core.cpp:_ZN12co_uring_web5utilsL19stringHashConstexprERKNSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+  | Unexecuted instantiation: http.cpp:_ZN12co_uring_web5utilsL19stringHashConstexprERKNSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+  | Unexecuted instantiation: json.cpp:_ZN12co_uring_web5utilsL19stringHashConstexprERKNSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+  | Unexecuted instantiation: logger.cpp:_ZN12co_uring_web5utilsL19stringHashConstexprERKNSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+  | Unexecuted instantiation: timer.cpp:_ZN12co_uring_web5utilsL19stringHashConstexprERKNSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+  | Unexecuted instantiation: utils.cpp:_ZN12co_uring_web5utilsL19stringHashConstexprERKNSt3__117basic_string_viewIcNS1_11char_traitsIcEEEE
+  ------------------
+   46|       |
+   47|  2.13k|static inline int64_t getTimeInMilisecond() {
+   48|  2.13k|	auto timepoint = std::chrono::system_clock::now();
+   49|  2.13k|	int64_t res =
+   50|  2.13k|	    std::chrono::duration_cast<std::chrono::milliseconds>(timepoint.time_since_epoch()).count();
+   51|  2.13k|	return res;
+   52|  2.13k|};
+  ------------------
+  | Unexecuted instantiation: static_web_http.cpp:_ZN12co_uring_web5utilsL19getTimeInMilisecondEv
+  ------------------
+  | Unexecuted instantiation: config.cpp:_ZN12co_uring_web5utilsL19getTimeInMilisecondEv
+  ------------------
+  | Unexecuted instantiation: core.cpp:_ZN12co_uring_web5utilsL19getTimeInMilisecondEv
+  ------------------
+  | Unexecuted instantiation: http.cpp:_ZN12co_uring_web5utilsL19getTimeInMilisecondEv
+  ------------------
+  | Unexecuted instantiation: json.cpp:_ZN12co_uring_web5utilsL19getTimeInMilisecondEv
+  ------------------
+  | Unexecuted instantiation: logger.cpp:_ZN12co_uring_web5utilsL19getTimeInMilisecondEv
+  ------------------
+  | timer.cpp:_ZN12co_uring_web5utilsL19getTimeInMilisecondEv:
+  |   47|  2.13k|static inline int64_t getTimeInMilisecond() {
+  |   48|  2.13k|	auto timepoint = std::chrono::system_clock::now();
+  |   49|  2.13k|	int64_t res =
+  |   50|  2.13k|	    std::chrono::duration_cast<std::chrono::milliseconds>(timepoint.time_since_epoch()).count();
+  |   51|  2.13k|	return res;
+  |   52|  2.13k|};
+  ------------------
+  | Unexecuted instantiation: utils.cpp:_ZN12co_uring_web5utilsL19getTimeInMilisecondEv
+  ------------------
+   53|       |std::string getcwdPath();
+   54|       |std::string addr2str(sockaddr_in addr);
+   55|       |
+   56|      0|static inline int getFileSizeByName(const std::string &name) {
+   57|      0|	struct stat s;
+   58|      0|	if (stat(name.c_str(), &s)) {
+   59|      0|		return -1;
+   60|      0|	}
+   61|      0|	return s.st_size;
+   62|      0|};
+  ------------------
+  | Unexecuted instantiation: static_web_http.cpp:_ZN12co_uring_web5utilsL17getFileSizeByNameERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  | Unexecuted instantiation: config.cpp:_ZN12co_uring_web5utilsL17getFileSizeByNameERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  | Unexecuted instantiation: core.cpp:_ZN12co_uring_web5utilsL17getFileSizeByNameERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  | Unexecuted instantiation: http.cpp:_ZN12co_uring_web5utilsL17getFileSizeByNameERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  | Unexecuted instantiation: json.cpp:_ZN12co_uring_web5utilsL17getFileSizeByNameERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  | Unexecuted instantiation: logger.cpp:_ZN12co_uring_web5utilsL17getFileSizeByNameERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  | Unexecuted instantiation: timer.cpp:_ZN12co_uring_web5utilsL17getFileSizeByNameERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  | Unexecuted instantiation: utils.cpp:_ZN12co_uring_web5utilsL17getFileSizeByNameERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+   63|   600k|static inline int getFileSizeByFd(int fd) {
+   64|   600k|	struct stat s;
+   65|   600k|	if (fstat(fd, &s)) {
+   66|      0|		return -1;
+   67|      0|	}
+   68|   600k|	return s.st_size;
+   69|   600k|}
+  ------------------
+  | static_web_http.cpp:_ZN12co_uring_web5utilsL15getFileSizeByFdEi:
+  |   63|   600k|static inline int getFileSizeByFd(int fd) {
+  |   64|   600k|	struct stat s;
+  |   65|   600k|	if (fstat(fd, &s)) {
+  |   66|      0|		return -1;
+  |   67|      0|	}
+  |   68|   600k|	return s.st_size;
+  |   69|   600k|}
+  ------------------
+  | Unexecuted instantiation: config.cpp:_ZN12co_uring_web5utilsL15getFileSizeByFdEi
+  ------------------
+  | Unexecuted instantiation: core.cpp:_ZN12co_uring_web5utilsL15getFileSizeByFdEi
+  ------------------
+  | Unexecuted instantiation: http.cpp:_ZN12co_uring_web5utilsL15getFileSizeByFdEi
+  ------------------
+  | Unexecuted instantiation: json.cpp:_ZN12co_uring_web5utilsL15getFileSizeByFdEi
+  ------------------
+  | Unexecuted instantiation: logger.cpp:_ZN12co_uring_web5utilsL15getFileSizeByFdEi
+  ------------------
+  | Unexecuted instantiation: timer.cpp:_ZN12co_uring_web5utilsL15getFileSizeByFdEi
+  ------------------
+  | Unexecuted instantiation: utils.cpp:_ZN12co_uring_web5utilsL15getFileSizeByFdEi
+  ------------------
+   70|       |
+   71|       |static inline std::vector<std::string_view>
+   72|      0|splitToViews(std::string_view str, std::string_view delimiter, int maxsplit = -1) {
+   73|      0|	using namespace std;
+   74|      0|	vector<string_view> res;
+   75|       |
+   76|      0|	if (maxsplit == 0 || str.size() < delimiter.size() || str.size() == 0 || delimiter.size() == 0)
+   77|      0|		return res;
+   78|       |
+   79|      0|	int point = 0;
+   80|      0|	for (int i = 0; i < str.size();) {
+   81|      0|		if (maxsplit) {
+   82|      0|			if (str.substr(i, delimiter.size()) == delimiter) {
+   83|      0|				res.emplace_back(str.substr(point, i - point));
+   84|       |
+   85|      0|				i += delimiter.size();
+   86|      0|				point = i;
+   87|      0|				maxsplit--;
+   88|      0|			} else {
+   89|      0|				++i;
+   90|      0|			}
+   91|      0|		} else {
+   92|      0|			return res;
+   93|      0|		}
+   94|      0|	}
+   95|      0|	if (maxsplit && point <= str.size()) {
+   96|      0|		res.emplace_back(str.substr(point, str.size() - point));
+   97|      0|	}
+   98|      0|	return res;
+   99|      0|}
+  ------------------
+  | Unexecuted instantiation: static_web_http.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: config.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: core.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: http.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: json.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: logger.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: timer.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: utils.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  100|       |static inline std::vector<std::string_view> splitToViews(std::string_view str, char delimiter,
+  101|      0|                                                         int maxsplit = -1) {
+  102|      0|	using namespace std;
+  103|      0|	vector<string_view> res;
+  104|       |
+  105|      0|	if (maxsplit == 0 || str.size() == 0) return res;
+  106|       |
+  107|      0|	int point = 0;
+  108|      0|	for (int i = 0; i < str.size();) {
+  109|      0|		if (maxsplit) {
+  110|      0|			if (str[i] == delimiter) {
+  111|      0|				res.emplace_back(str.substr(point, i - point));
+  112|       |
+  113|      0|				i++;
+  114|      0|				point = i;
+  115|      0|				maxsplit--;
+  116|      0|			} else {
+  117|      0|				++i;
+  118|      0|			}
+  119|      0|		} else {
+  120|      0|			return res;
+  121|      0|		}
+  122|      0|	}
+  123|      0|	if (maxsplit && point <= str.size()) {
+  124|      0|		res.emplace_back(str.substr(point, str.size() - point));
+  125|      0|	}
+  126|      0|	return res;
+  127|      0|}
+  ------------------
+  | Unexecuted instantiation: static_web_http.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: config.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: core.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: http.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: json.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: logger.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: timer.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: utils.cpp:_ZN12co_uring_web5utilsL12splitToViewsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  128|       |
+  129|       |static inline std::vector<std::string>
+  130|      0|splitToStrings(std::string_view str, std::string_view delimiter, int maxsplit = -1) {
+  131|      0|	using namespace std;
+  132|      0|	vector<string> res;
+  133|      0|
+  134|      0|	if (maxsplit == 0 || str.size() < delimiter.size() || str.size() == 0 || delimiter.size() == 0)
+  135|      0|		return res;
+  136|      0|
+  137|      0|	int point = 0;
+  138|      0|	for (int i = 0; i < str.size();) {
+  139|      0|		if (maxsplit) {
+  140|      0|			if (str.substr(i, delimiter.size()) == delimiter) {
+  141|      0|				res.emplace_back(str.substr(point, i - point));
+  142|      0|
+  143|      0|				i += delimiter.size();
+  144|      0|				point = i;
+  145|      0|				maxsplit--;
+  146|      0|			} else {
+  147|      0|				++i;
+  148|      0|			}
+  149|      0|		} else {
+  150|      0|			return res;
+  151|      0|		}
+  152|      0|	}
+  153|      0|	if (maxsplit && point <= str.size()) {
+  154|      0|		res.emplace_back(str.substr(point, str.size() - point));
+  155|      0|	}
+  156|      0|	return res;
+  157|      0|}
+  ------------------
+  | Unexecuted instantiation: static_web_http.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: config.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: core.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: http.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: json.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: logger.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: timer.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  | Unexecuted instantiation: utils.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEES5_i
+  ------------------
+  158|       |static inline std::vector<std::string> splitToStrings(std::string_view str, char delimiter,
+  159|      0|                                                      int maxsplit = -1) {
+  160|      0|	using namespace std;
+  161|      0|	vector<string> res;
+  162|      0|
+  163|      0|	if (maxsplit == 0 || str.size() == 0) return res;
+  164|      0|
+  165|      0|	int point = 0;
+  166|      0|	for (int i = 0; i < str.size();) {
+  167|      0|		if (maxsplit) {
+  168|      0|			if (str[i] == delimiter) {
+  169|      0|				res.emplace_back(str.substr(point, i - point));
+  170|      0|
+  171|      0|				i++;
+  172|      0|				point = i;
+  173|      0|				maxsplit--;
+  174|      0|			} else {
+  175|      0|				++i;
+  176|      0|			}
+  177|      0|		} else {
+  178|      0|			return res;
+  179|      0|		}
+  180|      0|	}
+  181|      0|	if (maxsplit && point <= str.size()) {
+  182|      0|		res.emplace_back(str.substr(point, str.size() - point));
+  183|      0|	}
+  184|      0|	return res;
+  185|      0|}
+  ------------------
+  | Unexecuted instantiation: static_web_http.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: config.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: core.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: http.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: json.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: logger.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: timer.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  | Unexecuted instantiation: utils.cpp:_ZN12co_uring_web5utilsL14splitToStringsENSt3__117basic_string_viewIcNS1_11char_traitsIcEEEEci
+  ------------------
+  186|       |
+  187|      0|static inline std::string stringsJoin(std::vector<std::string> &v, std::string_view sv = "") {
+  188|      0|	using namespace std;
+  189|      0|	if (v.size() == 0) return "";
+  190|      0|	if (v.size() == 1) return v.back();
+  191|      0|	stringstream ss;
+  192|      0|	if (!sv.empty()) {
+  193|      0|		for (int i = 0; i < v.size() - 1; ++i) {
+  194|      0|			ss << v[i] << sv;
+  195|      0|		}
+  196|      0|		ss << v.back();
+  197|      0|	} else {
+  198|      0|		for (auto &&s : v) {
+  199|      0|			ss << s;
+  200|      0|		}
+  201|      0|	}
+  202|      0|	return ss.str();
+  203|      0|}
+  ------------------
+  | Unexecuted instantiation: static_web_http.cpp:_ZN12co_uring_web5utilsL11stringsJoinERNSt3__16vectorINS1_12basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEENS6_IS8_EEEENS1_17basic_string_viewIcS5_EE
+  ------------------
+  | Unexecuted instantiation: config.cpp:_ZN12co_uring_web5utilsL11stringsJoinERNSt3__16vectorINS1_12basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEENS6_IS8_EEEENS1_17basic_string_viewIcS5_EE
+  ------------------
+  | Unexecuted instantiation: core.cpp:_ZN12co_uring_web5utilsL11stringsJoinERNSt3__16vectorINS1_12basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEENS6_IS8_EEEENS1_17basic_string_viewIcS5_EE
+  ------------------
+  | Unexecuted instantiation: http.cpp:_ZN12co_uring_web5utilsL11stringsJoinERNSt3__16vectorINS1_12basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEENS6_IS8_EEEENS1_17basic_string_viewIcS5_EE
+  ------------------
+  | Unexecuted instantiation: json.cpp:_ZN12co_uring_web5utilsL11stringsJoinERNSt3__16vectorINS1_12basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEENS6_IS8_EEEENS1_17basic_string_viewIcS5_EE
+  ------------------
+  | Unexecuted instantiation: logger.cpp:_ZN12co_uring_web5utilsL11stringsJoinERNSt3__16vectorINS1_12basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEENS6_IS8_EEEENS1_17basic_string_viewIcS5_EE
+  ------------------
+  | Unexecuted instantiation: timer.cpp:_ZN12co_uring_web5utilsL11stringsJoinERNSt3__16vectorINS1_12basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEENS6_IS8_EEEENS1_17basic_string_viewIcS5_EE
+  ------------------
+  | Unexecuted instantiation: utils.cpp:_ZN12co_uring_web5utilsL11stringsJoinERNSt3__16vectorINS1_12basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEENS6_IS8_EEEENS1_17basic_string_viewIcS5_EE
+  ------------------
+  204|       |
+  205|       |struct Utf8CodePoint {
+  206|       |	char bytes[8];
+  207|       |};
+  208|      0|static inline Utf8CodePoint fromUnicode(wchar_t uChar) {
+  209|      0|	Utf8CodePoint res;
+  210|      0|	char *pOutput = &(res.bytes[1]);
+  211|      0|	int outSize = 6;
+  212|       |
+  213|      0|	if (uChar <= 0x0000007F) {
+  214|       |		// * U-00000000 - U-0000007F:  0xxxxxxx
+  215|      0|		*pOutput = (uChar & 0x7F);
+  216|      0|		res.bytes[0] = 1;
+  217|      0|	} else if (uChar >= 0x00000080 && uChar <= 0x000007FF) {
+  218|       |		// * U-00000080 - U-000007FF:  110xxxxx 10xxxxxx
+  219|      0|		*(pOutput + 1) = (uChar & 0x3F) | 0x80;
+  220|      0|		*pOutput = ((uChar >> 6) & 0x1F) | 0xC0;
+  221|      0|		res.bytes[0] = 2;
+  222|      0|	} else if (uChar >= 0x00000800 && uChar <= 0x0000FFFF) {
+  223|       |		// * U-00000800 - U-0000FFFF:  1110xxxx 10xxxxxx 10xxxxxx
+  224|      0|		*(pOutput + 2) = (uChar & 0x3F) | 0x80;
+  225|      0|		*(pOutput + 1) = ((uChar >> 6) & 0x3F) | 0x80;
+  226|      0|		*pOutput = ((uChar >> 12) & 0x0F) | 0xE0;
+  227|      0|		res.bytes[0] = 3;
+  228|      0|	} else if (uChar >= 0x00010000 && uChar <= 0x001FFFFF) {
+  229|       |		// * U-00010000 - U-001FFFFF:  11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+  230|      0|		*(pOutput + 3) = (uChar & 0x3F) | 0x80;
+  231|      0|		*(pOutput + 2) = ((uChar >> 6) & 0x3F) | 0x80;
+  232|      0|		*(pOutput + 1) = ((uChar >> 12) & 0x3F) | 0x80;
+  233|      0|		*pOutput = ((uChar >> 18) & 0x07) | 0xF0;
+  234|      0|		res.bytes[0] = 4;
+  235|      0|	} else if (uChar >= 0x00200000 && uChar <= 0x03FFFFFF) {
+  236|       |		// * U-00200000 - U-03FFFFFF:  111110xx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx
+  237|      0|		*(pOutput + 4) = (uChar & 0x3F) | 0x80;
+  238|      0|		*(pOutput + 3) = ((uChar >> 6) & 0x3F) | 0x80;
+  239|      0|		*(pOutput + 2) = ((uChar >> 12) & 0x3F) | 0x80;
+  240|      0|		*(pOutput + 1) = ((uChar >> 18) & 0x3F) | 0x80;
+  241|      0|		*pOutput = ((uChar >> 24) & 0x03) | 0xF8;
+  242|      0|		res.bytes[0] = 5;
+  243|      0|	} else if (uChar >= 0x04000000 && uChar <= 0x7FFFFFFF) {
+  244|       |		// * U-04000000 - U-7FFFFFFF:  1111110x 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx
+  245|      0|		*(pOutput + 5) = (uChar & 0x3F) | 0x80;
+  246|      0|		*(pOutput + 4) = ((uChar >> 6) & 0x3F) | 0x80;
+  247|      0|		*(pOutput + 3) = ((uChar >> 12) & 0x3F) | 0x80;
+  248|      0|		*(pOutput + 2) = ((uChar >> 18) & 0x3F) | 0x80;
+  249|      0|		*(pOutput + 1) = ((uChar >> 24) & 0x3F) | 0x80;
+  250|      0|		*pOutput = ((uChar >> 30) & 0x01) | 0xFC;
+  251|      0|		res.bytes[0] = 6;
+  252|      0|	}
+  253|       |
+  254|      0|	return res;
+  255|      0|};
+  ------------------
+  | Unexecuted instantiation: static_web_http.cpp:_ZN12co_uring_web5utilsL11fromUnicodeEw
+  ------------------
+  | Unexecuted instantiation: config.cpp:_ZN12co_uring_web5utilsL11fromUnicodeEw
+  ------------------
+  | Unexecuted instantiation: core.cpp:_ZN12co_uring_web5utilsL11fromUnicodeEw
+  ------------------
+  | Unexecuted instantiation: http.cpp:_ZN12co_uring_web5utilsL11fromUnicodeEw
+  ------------------
+  | Unexecuted instantiation: json.cpp:_ZN12co_uring_web5utilsL11fromUnicodeEw
+  ------------------
+  | Unexecuted instantiation: logger.cpp:_ZN12co_uring_web5utilsL11fromUnicodeEw
+  ------------------
+  | Unexecuted instantiation: timer.cpp:_ZN12co_uring_web5utilsL11fromUnicodeEw
+  ------------------
+  | Unexecuted instantiation: utils.cpp:_ZN12co_uring_web5utilsL11fromUnicodeEw
+  ------------------
+  256|      1|static inline std::string readTextFile(const std::string &path) {
+  257|      1|	using namespace std;
+  258|      1|	ifstream ifs(path, ios::ate);
+  259|      1|	if (!ifs.is_open()) {
+  260|      0|		throw invalid_argument("没有这个文件: " + path);
+  261|      0|	}
+  262|      1|	auto size = ifs.tellg();
+  263|      1|	string res(size, 0);
+  264|      1|	ifs.seekg(0);
+  265|      1|	ifs.read(&res[0], size);
+  266|      1|	ifs.close();
+  267|      1|	return res;
+  268|      1|}
+  ------------------
+  | Unexecuted instantiation: static_web_http.cpp:_ZN12co_uring_web5utilsL12readTextFileERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  | config.cpp:_ZN12co_uring_web5utilsL12readTextFileERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE:
+  |  256|      1|static inline std::string readTextFile(const std::string &path) {
+  |  257|      1|	using namespace std;
+  |  258|      1|	ifstream ifs(path, ios::ate);
+  |  259|      1|	if (!ifs.is_open()) {
+  |  260|      0|		throw invalid_argument("没有这个文件: " + path);
+  |  261|      0|	}
+  |  262|      1|	auto size = ifs.tellg();
+  |  263|      1|	string res(size, 0);
+  |  264|      1|	ifs.seekg(0);
+  |  265|      1|	ifs.read(&res[0], size);
+  |  266|      1|	ifs.close();
+  |  267|      1|	return res;
+  |  268|      1|}
+  ------------------
+  | Unexecuted instantiation: core.cpp:_ZN12co_uring_web5utilsL12readTextFileERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  | Unexecuted instantiation: http.cpp:_ZN12co_uring_web5utilsL12readTextFileERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  | Unexecuted instantiation: json.cpp:_ZN12co_uring_web5utilsL12readTextFileERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  | Unexecuted instantiation: logger.cpp:_ZN12co_uring_web5utilsL12readTextFileERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  | Unexecuted instantiation: timer.cpp:_ZN12co_uring_web5utilsL12readTextFileERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  | Unexecuted instantiation: utils.cpp:_ZN12co_uring_web5utilsL12readTextFileERKNSt3__112basic_stringIcNS1_11char_traitsIcEENS1_9allocatorIcEEEE
+  ------------------
+  269|       |
+  270|       |}  // namespace co_uring_web::utils
+
+/home/zhouheng/C++/co_uring_http/src/config.cpp:
+    1|       |#include "config.h"
+    2|       |
+    3|       |#include <atomic>
+    4|       |#include <cassert>
+    5|       |namespace co_uring_web {
+    6|       |Config *Config::instance = new Config();
+    7|      1|void Config::init(const std::string &config_file) {
+    8|      1|	using namespace std;
+    9|      1|	using namespace utils;
+   10|      1|	if(config_file.empty())return;
+   11|      1|	JsonParser parser;
+   12|      1|	std::string content = utils::readTextFile(config_file);
+   13|      1|	auto temp = parser.parse(content);
+   14|      1|	instance->map_ = move(*((JsonMap *)temp.release()));
+   15|      1|	instance->init_http_dir();
+   16|      1|	instance->init_logger_file_name();
+   17|      1|	instance->init_logger_output_dir();
+   18|      1|    asm volatile("mfence":::"memory");
+   19|       |	
+   20|      1|}
+   21|   600k|Config&Config::getInstance(){
+   22|   600k|    return *instance;
+   23|   600k|}
+   24|       |}  // namespace co_uring_web
+
+/home/zhouheng/C++/co_uring_http/src/core.cpp:
+    1|       |/**
+    2|       | *@文件    :core.cpp
+    3|       | *@时间    :2022/01/19 21:20:26
+    4|       | *@作者    :周恒
+    5|       | *@版本    :1.0
+    6|       | *@说明    :
+    7|       | **/
+    8|       |#include "core.h"
+    9|       |
+   10|       |#include <asm-generic/errno-base.h>
+   11|       |#include <asm-generic/errno.h>
+   12|       |#include <liburing.h>
+   13|       |#include <liburing/io_uring.h>
+   14|       |#include <linux/time_types.h>
+   15|       |#include <sys/epoll.h>
+   16|       |#include <unistd.h>
+   17|       |
+   18|       |#include <cassert>
+   19|       |#include <cerrno>
+   20|       |#include <cstddef>
+   21|       |#include <cstdint>
+   22|       |#include <cstring>
+   23|       |#include <experimental/coroutine>
+   24|       |#include <vector>
+   25|       |
+   26|       |#include "logger.h"
+   27|       |#include "utils.h"
+   28|       |namespace co_uring_web::core {
+   29|      1|UringScheduler::UringScheduler() {
+   30|      1|	io_uring_queue_init(UringScheduler::UringSize, &uring_, 0);
+   31|      1|	this->ioIndex2req_.reserve(100000);
+   32|      1|}
+   33|   602k|void UringScheduler::handleRead(IoRequest &req) {
+   34|   602k|	assert(req.op == IoRequestOp::OP_READ);
+   35|   602k|	uint64_t id = ioIndex_++;
+   36|   602k|	io_uring_sqe *sqe = io_uring_get_sqe(&uring_);
+   37|   602k|	io_uring_prep_read(sqe, req.fd, req.data, req.capicaty - req.size, 0);
+   38|   602k|	io_uring_sqe_set_data(sqe, (void *)id);
+   39|   602k|	io_uring_submit(&uring_);
+   40|       |
+   41|   602k|	this->ioIndex2req_.insert({id, &req});
+   42|   602k|	if (req.timeout > 0) {
+   43|      0|		this->timerQueue_.add(id, utils::getTimeInMilisecond() + req.timeout);
+   44|      0|	}
+   45|   602k|}
+   46|   600k|void UringScheduler::handleWrite(IoRequest &req) {
+   47|   600k|	assert(req.op == IoRequestOp::OP_WRITE);
+   48|       |
+   49|   600k|	uint64_t id = ioIndex_++;
+   50|   600k|	io_uring_sqe *sqe = io_uring_get_sqe(&uring_);
+   51|   600k|	io_uring_prep_write(sqe, req.fd, req.data, req.size, 0);
+   52|   600k|	io_uring_sqe_set_data(sqe, (void *)id);
+   53|   600k|	io_uring_submit(&uring_);
+   54|       |
+   55|   600k|	this->ioIndex2req_.insert({id, &req});
+   56|   600k|	if (req.timeout > 0) {
+   57|      0|		this->timerQueue_.add(id, utils::getTimeInMilisecond() + req.timeout);
+   58|      0|	}
+   59|   600k|}
+   60|  2.13k|void UringScheduler::poll(std::vector<void *> &readyHandleAddrs) {
+   61|  2.13k|	struct io_uring_cqe *cqe;
+   62|  2.13k|	__kernel_timespec ts = {.tv_sec = 0, .tv_nsec =1};
+   63|  1.20M|	while (true) {
+   64|       |		// io_uring_sqe *sqe=io_uring_get_sqe(&uring_);
+   65|       |	
+   66|       |		// io_uring_prep_timeout(sqe, &ts, 1, IORING_TIMEOUT_ABS);
+   67|       |		// io_uring_submit(&uring_);
+   68|  1.20M|		int ret = io_uring_wait_cqe_timeout(&uring_, &cqe, &ts);
+   69|  1.20M|		if (ret < 0) {
+   70|  2.13k|			if (ret == -ETIME) {
+   71|  2.13k|				break;
+   72|  2.13k|			}
+   73|      0|			char errBuff[64];
+   74|      0|			LOG_ERROR << "io_uring_wait_cqe_timeout异常,错误码为:" << ret << " 即 "
+   75|      0|			          << strerror_r(-ret, errBuff, 64);
+   76|      0|			break;
+   77|  2.13k|		}
+   78|  1.20M|		if(cqe->user_data==0){
+   79|      0|			io_uring_cqe_seen(&uring_, cqe);
+   80|      0|			break;
+   81|      0|		}
+   82|       |
+   83|  1.20M|		uint64_t id = cqe->user_data;
+   84|  1.20M|		auto it = this->ioIndex2req_.find(id);
+   85|  1.20M|		if (it == ioIndex2req_.end()) continue;  //说明之前已经被删除了
+   86|  1.20M|		auto *req = (IoRequest *)it->second;
+   87|  1.20M|		req->retCode = cqe->res;
+   88|  1.20M|		void *handleAddr = req->context;
+   89|  1.20M|		io_uring_cqe_seen(&uring_, cqe);
+   90|  1.20M|		readyHandleAddrs.push_back(handleAddr);
+   91|       |
+   92|  1.20M|		this->ioIndex2req_.erase(it);
+   93|  1.20M|		if (req->timeout > 0) {
+   94|      0|			this->timerQueue_.remove(id);
+   95|      0|		}
+   96|       |		
+   97|       |		
+   98|  1.20M|	}
+   99|  2.13k|	std::vector<uint64_t> expireds;
+  100|  2.13k|		this->timerQueue_.popExpired(expireds);
+  101|  2.13k|		for (auto key : expireds) {
+  102|       |			//处理过期的请求
+  103|      0|			auto it = this->ioIndex2req_.find(key);
+  104|      0|			if (it == this->ioIndex2req_.end()) continue;
+  105|      0|			auto *req = (IoRequest *)it->second;
+  106|      0|			req->retCode = -1;
+  107|      0|			readyHandleAddrs.push_back(req->context);
+  108|      0|			this->ioIndex2req_.erase(it);
+  109|      0|		}
+  110|  2.13k|		return;
+  111|  2.13k|}
+  112|      0|EpollScheduler::EpollScheduler() {
+  113|      0|	using namespace std::string_view_literals;
+  114|      0|	epollfd_ = epoll_create1(0);
+  115|      0|	if (epollfd_ < 0) {
+  116|      0|		int err = errno;
+  117|      0|		char errBuff[64];
+  118|      0|		LOG_FATAL << "epoll 创建失败 : "sv << err << " : "sv << strerror_r(err, errBuff, 64);
+  119|      0|		assert(0);
+  120|      0|	}
+  121|      0|	this->ioIndex2req_.reserve(10000);
+  122|      0|}
+  123|      0|void EpollScheduler::handleRead(IoRequest &req) {
+  124|       |	//先直接读
+  125|      0|	setNonblocking(req.fd);  //异步非阻塞
+  126|      0|	assert(req.op == IoRequestOp::OP_READ);
+  127|      0|	req.retCode = 0;
+  128|      0|	int readsz = read(req.fd, req.data, req.capicaty);
+  129|      0|	if (readsz < 0) {  //一上来就不能读
+  130|      0|		int err = errno;
+  131|      0|		if (err != EAGAIN) {
+  132|      0|			req.retCode = -1;
+  133|      0|			completedHandleAddrs_.push_back(req.context);
+  134|      0|			return;
+  135|      0|		}
+  136|      0|		epoll_event event {0};
+  137|      0|		event.events = EPOLLIN | EPOLLET;
+  138|      0|		uint64_t id = ioIndex_++;
+  139|      0|		event.data.u64 = id;
+  140|      0|		this->ioIndex2req_.insert({id, &req});
+  141|      0|		int ret = epoll_ctl(epollfd_, EPOLL_CTL_ADD, req.fd, &event);
+  142|       |
+  143|      0|		if (ret == -1) {
+  144|      0|			req.retCode = -1;
+  145|      0|			int err = errno;
+  146|      0|			char errBuff[64];
+  147|      0|			LOG_ERROR << "epoll: " << epollfd_ << " add error : " << err << " 即 "
+  148|      0|			          << strerror_r(err, errBuff, 64);
+  149|      0|			completedHandleAddrs_.push_back(req.context);
+  150|      0|			return;
+  151|      0|		}
+  152|       |
+  153|      0|		if (req.timeout > 0)  //不能一次性读完，且需要定时器的情况
+  154|      0|			this->timerQueue_.add(id, utils::getTimeInMilisecond() + req.timeout);
+  155|       |		// uncompletedReqs.push_back(&req);
+  156|      0|	} else {
+  157|      0|		req.retCode = readsz;
+  158|      0|		completedHandleAddrs_.push_back(req.context);
+  159|      0|	}
+  160|      0|}
+  161|      0|void EpollScheduler::handleWrite(IoRequest &req) {
+  162|      0|	using namespace std;
+  163|       |	//先直接写
+  164|      0|	setNonblocking(req.fd);
+  165|      0|	assert(req.op == IoRequestOp::OP_WRITE);
+  166|      0|	req.retCode = 0;
+  167|      0|	int written = write(req.fd, req.data, req.size);
+  168|      0|	if (written < 0) {  //如果一上来就不可写的话
+  169|      0|		int err = errno;
+  170|      0|		if (err != EAGAIN) {  //排除掉其他错误
+  171|      0|			req.retCode = -1;
+  172|      0|			completedHandleAddrs_.push_back(req.context);
+  173|      0|			return;
+  174|      0|		}
+  175|       |		//加入epoll监听队列
+  176|      0|		goto uncompleted;
+  177|      0|	}
+  178|      0|	if (written == 0) {  //关闭了连接
+  179|      0|		req.retCode = 0;
+  180|      0|		completedHandleAddrs_.push_back(req.context);
+  181|      0|		return;
+  182|      0|	}
+  183|      0|	if (req.size == written) {  //全部写完
+  184|      0|		req.retCode = written;
+  185|      0|		completedHandleAddrs_.push_back(req.context);
+  186|      0|		return;
+  187|      0|	}
+  188|       |	//只写了一部分的情况，必须继续写，直到返回-1,否则边缘触发不会通知
+  189|      0|	req.retCode += written;
+  190|      0|	while (written != -1) {
+  191|      0|		written = write(req.fd, req.data + req.retCode, req.size - req.retCode);
+  192|      0|		if (written == -1) {
+  193|      0|			int err = errno;
+  194|      0|			if (err != EAGAIN) {
+  195|      0|				req.retCode = -1;
+  196|      0|				completedHandleAddrs_.push_back(req.context);
+  197|      0|				return;
+  198|      0|			}
+  199|      0|			break;
+  200|      0|		}
+  201|      0|		if (written == 0) {
+  202|      0|			req.retCode = 0;
+  203|      0|			completedHandleAddrs_.push_back(req.context);
+  204|      0|			return;
+  205|      0|		}
+  206|      0|		req.retCode += written;
+  207|      0|		if (req.retCode == req.size) {
+  208|      0|			completedHandleAddrs_.push_back(req.context);
+  209|      0|			return;
+  210|      0|		}
+  211|      0|	}
+  212|       |
+  213|      0|uncompleted:
+  214|      0|	uint64_t id = ioIndex_++;
+  215|      0|	this->ioIndex2req_.insert({id, &req});
+  216|      0|	epoll_event event {0};
+  217|      0|	event.events = EPOLLOUT | EPOLLET;
+  218|      0|	event.data.u64 = id;
+  219|      0|	int ret = epoll_ctl(epollfd_, EPOLL_CTL_ADD, id, &event);
+  220|      0|	if (ret == -1) {
+  221|      0|		int err = errno;
+  222|      0|		char errBuff[64];
+  223|      0|		LOG_ERROR << "epoll:"sv << epollfd_ << " add error : "sv << err << " 即 "sv
+  224|      0|		          << strerror_r(err, errBuff, 64);
+  225|      0|		completedHandleAddrs_.push_back(req.context);
+  226|       |
+  227|      0|		return;
+  228|      0|	}
+  229|       |
+  230|      0|	if (req.timeout > 0)  //不能一次性写完，且需要定时器的情况
+  231|      0|		this->timerQueue_.add(id, utils::getTimeInMilisecond() + req.timeout);
+  232|       |	// uncompletedReqs.push_back(&req);
+  233|      0|}
+  234|      0|void EpollScheduler::poll(std::vector<void *> &readyHandleAddrs) {
+  235|      0|	using namespace std;
+  236|      0|	epoll_event epollEventsBuffer[32];
+  237|      0|	int count = epoll_wait(epollfd_, epollEventsBuffer, 32, EpollTimeoutMiliseconds);
+  238|      0|	for (int i = 0; i < count; ++i) {
+  239|      0|		epoll_event &event = epollEventsBuffer[i];
+  240|      0|		if (event.events & EPOLLIN) {
+  241|      0|			uint64_t id = event.data.u64;
+  242|      0|			auto it = this->ioIndex2req_.find(id);
+  243|      0|			if (it == ioIndex2req_.end()) continue;  //说明已经删除了
+  244|      0|			auto *req = (IoRequest *)(it->second);
+  245|      0|			int readsz = read(req->fd, req->data, req->capicaty);
+  246|      0|			if (readsz == 0) {
+  247|      0|				req->retCode = 0;  //对端关闭了连接
+  248|      0|			} else if (readsz < 0) {
+  249|      0|				int err = errno;
+  250|      0|				assert(err != EAGAIN);  //必不可能是资源不可用
+  251|      0|				req->retCode = -1;
+  252|      0|				char errBuff[64];
+  253|      0|				LOG_ERROR << "epoll:"sv << epollfd_ << " add error : "sv << err << " 即 "sv
+  254|      0|				          << strerror_r(err, errBuff, 64);
+  255|      0|			} else {
+  256|      0|				req->retCode = readsz;
+  257|      0|			}
+  258|      0|			int ret = epoll_ctl(epollfd_, EPOLL_CTL_DEL, req->fd, nullptr);
+  259|      0|			if (ret < 0) {
+  260|      0|				int err = errno;
+  261|      0|				char errBuff[64];
+  262|      0|				LOG_ERROR << "epoll:"sv << epollfd_ << " del error : "sv << err << " 即 "sv
+  263|      0|				          << strerror_r(err, errBuff, 64);
+  264|      0|			}
+  265|      0|			this->ioIndex2req_.erase(it);
+  266|      0|			if (req->timeout > 0) this->timerQueue_.remove(id);
+  267|      0|			completedHandleAddrs_.push_back(req->context);
+  268|      0|		} else if (event.events & EPOLLOUT) {
+  269|       |			//需要epoll_del的情况 ret==0 ret<0 (ret+req->retCode==req->size)
+  270|      0|			uint64_t id = event.data.u64;
+  271|      0|			auto it = this->ioIndex2req_.find(id);
+  272|      0|			if (it == ioIndex2req_.end()) continue;  //说明已经删除了
+  273|      0|			auto *req = (IoRequest *)(it->second);
+  274|       |
+  275|      0|			int ret = write(req->fd, req->data + req->retCode, req->size - req->retCode);
+  276|      0|			if (ret > 0 && ret + req->retCode != req->size) {
+  277|      0|				req->retCode += ret;
+  278|      0|				ret = write(req->fd, req->data + req->retCode, req->size - req->retCode);
+  279|      0|				assert(ret == -1);
+  280|      0|				int err = errno;
+  281|      0|				assert(err == EAGAIN);
+  282|      0|				continue;
+  283|      0|			}
+  284|      0|			if (ret < 0) {
+  285|      0|				int err = errno;
+  286|      0|				assert(err != EAGAIN);  //必不可能是资源不可用
+  287|      0|				req->retCode = -1;
+  288|      0|				char errBuff[64];
+  289|      0|				LOG_ERROR << "epoll:"sv << epollfd_ << " add error : "sv << err << " 即 "sv
+  290|      0|				          << strerror_r(err, errBuff, 64);
+  291|      0|			} else if (ret == 0) {
+  292|      0|				req->retCode = 0;  //对端关闭了连接
+  293|      0|			} else {
+  294|      0|				req->retCode += ret;  //全部写完
+  295|      0|			}
+  296|      0|			this->ioIndex2req_.erase(it);
+  297|      0|			if (req->timeout > 0) {
+  298|      0|				this->timerQueue_.remove(id);
+  299|      0|			}
+  300|      0|			completedHandleAddrs_.push_back(req->context);
+  301|      0|			ret = epoll_ctl(epollfd_, EPOLL_CTL_DEL, req->fd, nullptr);
+  302|      0|			if (ret < 0) {
+  303|      0|				int err = errno;
+  304|      0|				char errBuff[64];
+  305|      0|				LOG_ERROR << "epoll:"sv << epollfd_ << " del error : "sv << err << " 即 "sv
+  306|      0|				          << strerror_r(err, errBuff, 64);
+  307|      0|			}
+  308|       |
+  309|      0|		} else {
+  310|      0|			LOG_ERROR << "未知的epoll_event"sv;
+  311|      0|			assert(0);
+  312|      0|		}
+  313|      0|	}
+  314|      0|	std::vector<uint64_t> expireds;
+  315|      0|	this->timerQueue_.popExpired(expireds);
+  316|      0|	for (auto id : expireds) {
+  317|       |		//处理过期的请求
+  318|      0|		auto it = this->ioIndex2req_.find(id);
+  319|      0|		if (it == this->ioIndex2req_.end()) continue;
+  320|      0|		auto *ptr = (IoRequest *)(it->second);
+  321|      0|		ptr->retCode = -1;
+  322|      0|		readyHandleAddrs.push_back(ptr->context);
+  323|      0|	}
+  324|      0|	swap(readyHandleAddrs, completedHandleAddrs_);
+  325|      0|}
+  326|       |
+  327|       |}  // namespace co_uring_web::core
+
+/home/zhouheng/C++/co_uring_http/src/http.cpp:
+    1|       |#include "http.h"
+    2|       |
+    3|       |#include <algorithm>
+    4|       |#include <cstddef>
+    5|       |#include <cstdint>
+    6|       |#include <cstring>
+    7|       |#include <exception>
+    8|       |#include <functional>
+    9|       |#include <optional>
+   10|       |#include <stdexcept>
+   11|       |#include <string>
+   12|       |#include <string_view>
+   13|       |
+   14|       |#include "logger.h"
+   15|       |#include "utils.h"
+   16|       |namespace co_uring_web {
+   17|  1.20M|std::string_view getStatusText(HttpResponseStatusCodes code) {
+   18|  1.20M|	using namespace std;
+   19|  1.20M|	switch (code) {
+   20|      0|		case HttpResponseStatusCodes::C100:
+   21|      0|			return "Continue"sv;
+   22|      0|		case HttpResponseStatusCodes::C101:
+   23|      0|			return "Switching Protocols"sv;
+   24|      0|		case HttpResponseStatusCodes::C102:
+   25|      0|			return "Processing"sv;
+   26|      0|		case HttpResponseStatusCodes::C103:
+   27|      0|			return "Early Hints"sv;
+   28|  1.20M|		case HttpResponseStatusCodes::C200:
+   29|  1.20M|			return "OK"sv;
+   30|      0|		case HttpResponseStatusCodes::C201:
+   31|      0|			return "Created"sv;
+   32|      0|		case HttpResponseStatusCodes::C202:
+   33|      0|			return "Accepted"sv;
+   34|      0|		case HttpResponseStatusCodes::C203:
+   35|      0|			return "Non-Authoritative Information"sv;
+   36|      0|		case HttpResponseStatusCodes::C204:
+   37|      0|			return "No Content"sv;
+   38|      0|		case HttpResponseStatusCodes::C205:
+   39|      0|			return "Reset Content"sv;
+   40|      0|		case HttpResponseStatusCodes::C206:
+   41|      0|			return "Partial Content"sv;
+   42|      0|		case HttpResponseStatusCodes::C207:
+   43|      0|			return "Multi-Status"sv;
+   44|      0|		case HttpResponseStatusCodes::C208:
+   45|      0|			return "Already Reported"sv;
+   46|      0|		case HttpResponseStatusCodes::C226:
+   47|      0|			return "IM Used (RFC 3229)"sv;
+   48|      0|		case HttpResponseStatusCodes::C300:
+   49|      0|			return "Multiple Choices"sv;
+   50|      0|		case HttpResponseStatusCodes::C301:
+   51|      0|			return "Moved Permanently"sv;
+   52|      0|		case HttpResponseStatusCodes::C302:
+   53|      0|			return "Moved temporarily"sv;
+   54|      0|		case HttpResponseStatusCodes::C303:
+   55|      0|			return "See Other"sv;
+   56|      0|		case HttpResponseStatusCodes::C304:
+   57|      0|			return "Not Modified"sv;
+   58|      0|		case HttpResponseStatusCodes::C305:
+   59|      0|			return "Use Proxy"sv;
+   60|      0|		case HttpResponseStatusCodes::C306:
+   61|      0|			return "Switch Proxy"sv;
+   62|      0|		case HttpResponseStatusCodes::C307:
+   63|      0|			return "Temporary Redirect"sv;
+   64|      0|		case HttpResponseStatusCodes::C308:
+   65|      0|			return "Permanent Redirect"sv;
+   66|      0|		case HttpResponseStatusCodes::C400:
+   67|      0|			return "Bad Request"sv;
+   68|      0|		case HttpResponseStatusCodes::C401:
+   69|      0|			return "Unauthorized"sv;
+   70|      0|		case HttpResponseStatusCodes::C402:
+   71|      0|			return "Payment Required"sv;
+   72|      0|		case HttpResponseStatusCodes::C403:
+   73|      0|			return "Forbidden"sv;
+   74|      0|		case HttpResponseStatusCodes::C404:
+   75|      0|			return "Not Found"sv;
+   76|      0|		case HttpResponseStatusCodes::C405:
+   77|      0|			return "Method Not Allowed"sv;
+   78|      0|		case HttpResponseStatusCodes::C406:
+   79|      0|			return "Not Acceptable"sv;
+   80|      0|		case HttpResponseStatusCodes::C407:
+   81|      0|			return "Proxy Authentication Required"sv;
+   82|      0|		case HttpResponseStatusCodes::C408:
+   83|      0|			return "Request Timeout"sv;
+   84|      0|		case HttpResponseStatusCodes::C409:
+   85|      0|			return "Conflict"sv;
+   86|      0|		case HttpResponseStatusCodes::C410:
+   87|      0|			return "Gone"sv;
+   88|      0|		case HttpResponseStatusCodes::C411:
+   89|      0|			return "Length Required"sv;
+   90|      0|		case HttpResponseStatusCodes::C412:
+   91|      0|			return "Precondition Failed"sv;
+   92|      0|		case HttpResponseStatusCodes::C413:
+   93|      0|			return "Payload Too Large"sv;
+   94|      0|		case HttpResponseStatusCodes::C414:
+   95|      0|			return "URI Too Long"sv;
+   96|      0|		case HttpResponseStatusCodes::C415:
+   97|      0|			return "Unsupported Media Type"sv;
+   98|      0|		case HttpResponseStatusCodes::C416:
+   99|      0|			return "Range Not Satisfiable"sv;
+  100|      0|		case HttpResponseStatusCodes::C417:
+  101|      0|			return "Expectation Failed"sv;
+  102|      0|		case HttpResponseStatusCodes::C418:
+  103|      0|			return "I'm a teapot"sv;
+  104|      0|		case HttpResponseStatusCodes::C421:
+  105|      0|			return "Misdirected Request"sv;
+  106|      0|		case HttpResponseStatusCodes::C422:
+  107|      0|			return "Unprocessable Entity"sv;
+  108|      0|		case HttpResponseStatusCodes::C423:
+  109|      0|			return "Locked"sv;
+  110|      0|		case HttpResponseStatusCodes::C424:
+  111|      0|			return "Failed Dependency"sv;
+  112|      0|		case HttpResponseStatusCodes::C425:
+  113|      0|			return "Too Early"sv;
+  114|      0|		case HttpResponseStatusCodes::C426:
+  115|      0|			return "Upgrade Required"sv;
+  116|      0|		case HttpResponseStatusCodes::C428:
+  117|      0|			return "Precondition Required"sv;
+  118|      0|		case HttpResponseStatusCodes::C429:
+  119|      0|			return "Too Many Requests"sv;
+  120|      0|		case HttpResponseStatusCodes::C431:
+  121|      0|			return "Request Header Fields Too Large"sv;
+  122|      0|		case HttpResponseStatusCodes::C451:
+  123|      0|			return "Unavailable For Legal Reasons"sv;
+  124|      0|		case HttpResponseStatusCodes::C500:
+  125|      0|			return "Internal Server Error"sv;
+  126|      0|		case HttpResponseStatusCodes::C501:
+  127|      0|			return "Not Implemented"sv;
+  128|      0|		case HttpResponseStatusCodes::C502:
+  129|      0|			return "Bad Gateway"sv;
+  130|      0|		case HttpResponseStatusCodes::C503:
+  131|      0|			return "Service Unavailable"sv;
+  132|      0|		case HttpResponseStatusCodes::C504:
+  133|      0|			return "Gateway Timeout"sv;
+  134|      0|		case HttpResponseStatusCodes::C505:
+  135|      0|			return "HTTP Version Not Supported"sv;
+  136|      0|		case HttpResponseStatusCodes::C506:
+  137|      0|			return "Variant Also Negotiates"sv;
+  138|      0|		case HttpResponseStatusCodes::C507:
+  139|      0|			return "Insufficient Storage"sv;
+  140|      0|		case HttpResponseStatusCodes::C508:
+  141|      0|			return "Loop Detected"sv;
+  142|      0|		case HttpResponseStatusCodes::C510:
+  143|      0|			return "Not Extended"sv;
+  144|      0|		case HttpResponseStatusCodes::C511:
+  145|      0|			return "Network Authentication Required"sv;
+  146|      0|		default:
+  147|      0|			return ""sv;
+  148|  1.20M|	}
+  149|  1.20M|};
+  150|   600k|std::string_view getContentType(std::string_view fileExt) {
+  151|   600k|	using namespace std;
+  152|   600k|	using namespace utils;
+  153|       |
+  154|   600k|	uint64_t hashVal = stringHash(fileExt);
+  155|   600k|	switch (hashVal) {
+  156|      0|		case stringHashConstexpr("jpg"sv):[[fallthrough]];
+  157|      0|		case stringHashConstexpr("jpeg"sv):{
+  158|      0|			return "image/jpeg"sv;
+  159|      0|		}
+  160|   600k|		case stringHashConstexpr("png"sv):{
+  161|   600k|			return "image/png"sv;
+  162|      0|		}
+  163|      0|		case stringHashConstexpr("gif"sv):{
+  164|      0|			return "image/gif"sv;
+  165|      0|		}
+  166|      0|		case stringHashConstexpr("htm"sv):[[fallthrough]];
+  167|      0|		case stringHashConstexpr("html"sv):{
+  168|      0|			return "text/html"sv;
+  169|      0|		}
+  170|      0|		case stringHashConstexpr("js"sv):{
+  171|      0|			return "application/javascript"sv;
+  172|      0|		}
+  173|      0|		case stringHashConstexpr("css"sv):{
+  174|      0|			return "text/css"sv;
+  175|      0|		}
+  176|      0|		case stringHashConstexpr("txt"sv):{
+  177|      0|			return "text/plain"sv;
+  178|      0|		}
+  179|      0|		default:{
+  180|      0|			return {};
+  181|      0|		}
+  182|   600k|	}
+  183|   600k|};
+  184|   600k|std::optional<HttpRequest> HttpRequest::fromRawData(std::string_view raw) {
+  185|   600k|	using namespace std;
+  186|   600k|	HttpRequest res;
+  187|       |
+  188|   600k|	int index = 0;
+  189|   600k|	try {
+  190|       |		//解析请求方法
+  191|   600k|		switch (raw.at(index)) {
+  192|   600k|			case 'G': {
+  193|   600k|				if (raw.substr(index, 3) == "GET"sv) {
+  194|   600k|					res.method_ = GET;
+  195|   600k|					index = index + 3;
+  196|   600k|					break;
+  197|   600k|				}
+  198|      0|				throw invalid_argument("http请求方法错误");
+  199|   600k|			}
+  200|      0|			case 'P': {
+  201|      0|				if (raw.substr(index, 4) == "POST"sv) {
+  202|      0|					res.method_ = POST;
+  203|      0|					index += 4;
+  204|      0|				} else if (raw.substr(index, 3) == "PUT"sv) {
+  205|      0|					res.method_ = PUT;
+  206|      0|					index += 3;
+  207|      0|				} else if (raw.substr(index, 5) == "PATCH"sv) {
+  208|      0|					res.method_ = PATCH;
+  209|      0|					index += 5;
+  210|      0|				} else {
+  211|      0|					throw invalid_argument("http请求方法错误");
+  212|      0|				}
+  213|      0|				break;
+  214|      0|			}
+  215|      0|			case 'D': {
+  216|      0|				if (raw.substr(index, 6) == "DELETE"sv) {
+  217|      0|					res.method_ = DELETE;
+  218|      0|					index += 6;
+  219|      0|				} else {
+  220|      0|					throw invalid_argument("http请求方法错误");
+  221|      0|				}
+  222|      0|				break;
+  223|      0|			}
+  224|      0|			case 'H': {
+  225|      0|				if (raw.substr(index, 4) == "HEAD"sv) {
+  226|      0|					res.method_ = HEAD;
+  227|      0|					index += 4;
+  228|      0|				} else {
+  229|      0|					throw invalid_argument("http请求方法错误");
+  230|      0|				}
+  231|      0|				break;
+  232|      0|			}
+  233|      0|			default: {
+  234|      0|				throw invalid_argument("http请求方法错误");
+  235|      0|			}
+  236|   600k|		}
+  237|   600k|		if (raw.at(index) != ' ') {
+  238|      0|			throw invalid_argument("http请求方法后不是空格");
+  239|      0|		}
+  240|   600k|		index++;
+  241|   600k|		int index_begin = index;
+  242|  5.40M|		while (raw.at(index) != ' ') {
+  243|  4.80M|			res.url_.push_back(raw[index]);
+  244|  4.80M|			index++;
+  245|  4.80M|		}
+  246|   600k|		index++;
+  247|   600k|		if (raw.substr(index, 5) != "HTTP/"sv) {
+  248|      0|			throw invalid_argument("http版本错误");
+  249|      0|		}
+  250|   600k|		index += 5;
+  251|   600k|		if (raw.substr(index, 3) == "0.9"sv) {
+  252|      0|			res.version_ = V9;
+  253|   600k|		} else if (raw.substr(index, 3) == "1.0"sv) {
+  254|   600k|			res.version_ = V10;
+  255|   600k|		} else if (raw.substr(index, 3) == "1.1"sv) {
+  256|      0|			res.version_ = V11;
+  257|      0|		} else {
+  258|      0|			throw invalid_argument("http版本错误");
+  259|      0|		}
+  260|   600k|		index += 3;
+  261|   600k|		if (raw.substr(index, 2) != "\r\n"sv) {
+  262|      0|			throw invalid_argument("http请求格式错误");
+  263|      0|		}
+  264|   600k|		index += 2;
+  265|  2.40M|		while (raw.substr(index, 2) != "\r\n"sv) {
+  266|  1.80M|			index_begin = index;
+  267|  13.8M|			while (raw.at(index) != ':') {
+  268|  12.0M|				index++;
+  269|  12.0M|			}
+  270|  1.80M|			string key(raw.substr(index_begin, index - index_begin));
+  271|  1.80M|			index++;
+  272|  3.60M|			while (raw.at(index) == ' ') {
+  273|  1.80M|				index++;
+  274|  1.80M|			}
+  275|  1.80M|			index_begin = index;
+  276|  21.0M|			while (raw.at(index) != '\r') {
+  277|  19.2M|				index++;
+  278|  19.2M|			}
+  279|  1.80M|			res.headers_.insert({move(key), string(raw.substr(index_begin, index - index_begin))});
+  280|  1.80M|			if (raw.substr(index, 2) != "\r\n"sv) {
+  281|      0|				throw invalid_argument("http请求头格式错误");
+  282|      0|			}
+  283|  1.80M|			index += 2;
+  284|  1.80M|		}
+  285|   600k|		index += 2;
+  286|   600k|		if (index < raw.size() - 1) {
+  287|      0|			res.body_ = raw.substr(index, raw.size() - index);
+  288|      0|		}
+  289|   600k|		return res;
+  290|   600k|	} catch (const out_of_range &oor) {
+  291|      0|		LOG_WARN << oor << " : index:" << index << " ; request:" << raw;
+  292|      0|		return {};
+  293|      0|	} catch (const invalid_argument &ia) {
+  294|      0|		LOG_WARN << ia << " : index:" << index << " ; request:" << raw;
+  295|      0|		return {};
+  296|      0|	}
+  297|   600k|}
+  298|      0|std::string HttpResponse::toRawData() {
+  299|      0|	using namespace std;
+  300|       |	//先确定长度
+  301|      0|	size_t resSize = 0;
+  302|       |	//"HTTP/1.0 200 "
+  303|      0|	resSize += 13;
+  304|       |	// status text
+  305|      0|	resSize += getStatusText(statusCode_).size();
+  306|       |	//\r\n
+  307|      0|	resSize += 2;  // request line长度
+  308|       |
+  309|      0|	for (auto &header : headers_) {
+  310|       |		// key长度+冒号+空格+value长度+\r\n
+  311|      0|		resSize += header.first.size() + 1 + 1 + header.second.size() + 2;
+  312|      0|	}
+  313|       |	//空行
+  314|      0|	resSize += 2;
+  315|      0|	resSize += body_.size();
+  316|      0|	string res(resSize, 0);
+  317|      0|	try {
+  318|      0|		int index = 0;
+  319|      0|		memcpy(res.data() + index, "HTTP/"sv.data(), "HTTP/"sv.size());
+  320|      0|		index += "HTTP/"sv.size();
+  321|      0|		switch (version_) {
+  322|      0|			case HttpVersion::VERSION_NOTHING: {
+  323|      0|				throw std::invalid_argument("http response version 为 NOTHING");
+  324|      0|			}
+  325|      0|			case HttpVersion::V10: {
+  326|      0|				memcpy(res.data() + index, "1.0"sv.data(), "1.0"sv.size());
+  327|      0|				index += "1.0"sv.size();
+  328|      0|				break;
+  329|      0|			}
+  330|      0|			case HttpVersion::V11: {
+  331|      0|				memcpy(res.data() + index, "1.1"sv.data(), "1.1"sv.size());
+  332|      0|				index += "1.1"sv.size();
+  333|      0|				break;
+  334|      0|			}
+  335|      0|			case HttpVersion::V9: {
+  336|      0|				memcpy(res.data(), "0.9"sv.data(), "0.9"sv.size());
+  337|      0|				index += "0.9"sv.size();
+  338|      0|				break;
+  339|      0|			}
+  340|      0|			default: {
+  341|      0|				throw std::invalid_argument("未知的 http response version");
+  342|      0|			}
+  343|      0|		}
+  344|      0|		res.at(index) = ' ';  //空格
+  345|      0|		index++;
+  346|      0|		memcpy(res.data() + index, to_string(statusCode_).data(), 3);  //状态码
+  347|      0|		index += 3;
+  348|      0|		res.at(index) = ' ';  //空格
+  349|      0|		index++;
+  350|      0|		auto statusText = getStatusText(statusCode_);
+  351|      0|		if (statusText.empty()) {
+  352|      0|			throw std::invalid_argument("未知的 http response status code");
+  353|      0|		}
+  354|      0|		memcpy(res.data() + index, statusText.data(), statusText.size());  //状态文字
+  355|      0|		index += statusText.size();
+  356|      0|		memcpy(res.data() + index, "\r\n", 2);  //\r\n
+  357|      0|		index += 2;
+  358|      0|		for (auto &[key, value] : headers_) {
+  359|      0|			memcpy(res.data() + index, key.data(), key.size());
+  360|      0|			index += key.size();
+  361|      0|			res.at(index) = ':';
+  362|      0|			index++;
+  363|      0|			res.at(index) = ' ';
+  364|      0|			index++;
+  365|      0|			memcpy(res.data() + index, value.data(), value.size());
+  366|      0|			index += value.size();
+  367|      0|			res.at(index) = '\r';
+  368|      0|			index++;
+  369|      0|			res.at(index) = '\n';
+  370|      0|			index++;
+  371|      0|		}
+  372|      0|		res.at(index) = '\r';
+  373|      0|		index++;
+  374|      0|		res.at(index) = '\n';
+  375|      0|		index++;
+  376|      0|		memcpy(res.data() + index, body_.data(), body_.size());
+  377|      0|		index += body_.size();
+  378|      0|		if (index != res.size()) {
+  379|      0|			throw out_of_range("http response 转化时越界");
+  380|      0|		}
+  381|      0|		return res;
+  382|       |
+  383|      0|	} catch (const exception &e) {
+  384|      0|		LOG_WARN << e;
+  385|      0|		return {};
+  386|      0|	}
+  387|      0|};
+  388|   600k|int HttpResponse::getRawDataSizeWithoutBody(){
+  389|   600k|	int resSize = 0;
+  390|       |	//"HTTP/1.0 200 "
+  391|   600k|	resSize += 13;
+  392|       |	// status text
+  393|   600k|	resSize += getStatusText(statusCode_).size();
+  394|       |	//\r\n
+  395|   600k|	resSize += 2;  // request line长度
+  396|       |
+  397|  1.80M|	for (auto &header : headers_) {
+  398|       |		// key长度+冒号+空格+value长度+\r\n
+  399|  1.80M|		resSize += header.first.size() + 1 + 1 + header.second.size() + 2;
+  400|  1.80M|	}
+  401|       |	//空行
+  402|   600k|	resSize += 2;
+  403|   600k|	return resSize;
+  404|   600k|}
+  405|   600k|void HttpResponse::toRawDataWithoutBody(char *buffer){
+  406|   600k|	try {
+  407|   600k|		using namespace std;
+  408|   600k|		int index = 0;
+  409|   600k|		memcpy(buffer + index, "HTTP/"sv.data(), "HTTP/"sv.size());
+  410|   600k|		index += "HTTP/"sv.size();
+  411|   600k|		switch (version_) {
+  412|      0|			case HttpVersion::VERSION_NOTHING: {
+  413|      0|				throw std::invalid_argument("http response version 为 NOTHING");
+  414|      0|			}
+  415|   600k|			case HttpVersion::V10: {
+  416|   600k|				memcpy(buffer + index, "1.0"sv.data(), "1.0"sv.size());
+  417|   600k|				index += "1.0"sv.size();
+  418|   600k|				break;
+  419|      0|			}
+  420|      0|			case HttpVersion::V11: {
+  421|      0|				memcpy(buffer + index, "1.1"sv.data(), "1.1"sv.size());
+  422|      0|				index += "1.1"sv.size();
+  423|      0|				break;
+  424|      0|			}
+  425|      0|			case HttpVersion::V9: {
+  426|      0|				memcpy(buffer, "0.9"sv.data(), "0.9"sv.size());
+  427|      0|				index += "0.9"sv.size();
+  428|      0|				break;
+  429|      0|			}
+  430|      0|			default: {
+  431|      0|				throw std::invalid_argument("未知的 http response version");
+  432|      0|			}
+  433|   600k|		}
+  434|   600k|		buffer[index] = ' ';  //空格
+  435|   600k|		index++;
+  436|   600k|		memcpy(buffer + index, to_string(statusCode_).data(), 3);  //状态码
+  437|   600k|		index += 3;
+  438|   600k|		buffer[index] = ' ';  //空格
+  439|   600k|		index++;
+  440|   600k|		auto statusText = getStatusText(statusCode_);
+  441|   600k|		if (statusText.empty()) {
+  442|      0|			throw std::invalid_argument("未知的 http response status code");
+  443|      0|		}
+  444|   600k|		memcpy(buffer + index, statusText.data(), statusText.size());  //状态文字
+  445|   600k|		index += statusText.size();
+  446|   600k|		memcpy(buffer + index, "\r\n", 2);  //\r\n
+  447|   600k|		index += 2;
+  448|  1.80M|		for (auto &[key, value] : headers_) {
+  449|  1.80M|			memcpy(buffer + index, key.data(), key.size());
+  450|  1.80M|			index += key.size();
+  451|  1.80M|			buffer[index] = ':';
+  452|  1.80M|			index++;
+  453|  1.80M|			buffer[index] = ' ';
+  454|  1.80M|			index++;
+  455|  1.80M|			memcpy(buffer + index, value.data(), value.size());
+  456|  1.80M|			index += value.size();
+  457|  1.80M|			buffer[index] = '\r';
+  458|  1.80M|			index++;
+  459|  1.80M|			buffer[index] = '\n';
+  460|  1.80M|			index++;
+  461|  1.80M|		}
+  462|   600k|		buffer[index] = '\r';
+  463|   600k|		index++;
+  464|   600k|		buffer[index] = '\n';
+  465|   600k|		index++;
+  466|       |		
+  467|       |		
+  468|       |
+  469|   600k|	} catch (const std::exception &e) {
+  470|      0|		LOG_WARN << e;
+  471|      0|	}
+  472|   600k|}
+  473|       |};  // namespace co_uring_web
+
+/home/zhouheng/C++/co_uring_http/src/json.cpp:
+    1|       |#include "json.h"
+    2|       |
+    3|       |#include <sys/types.h>
+    4|       |
+    5|       |#include <cassert>
+    6|       |#include <cstring>
+    7|       |#include <iostream>
+    8|       |#include <iterator>
+    9|       |#include <memory>
+   10|       |#include <stdexcept>
+   11|       |#include <string>
+   12|       |
+   13|       |#include "utils.h"
+   14|       |namespace co_uring_web::utils {
+   15|      0|JsonObj &JsonObj::operator[](int index) {
+   16|      0|	switch (this->jsonBaseType) {
+   17|      0|		case JsonBaseType::JsonArrayType: {
+   18|      0|			return *(static_cast<JsonArray *>(this)->data[index].get());
+   19|      0|		}
+   20|      0|		default:
+   21|      0|			throw JsonTypeError("不是JsonArray类型");
+   22|      0|	}
+   23|      0|};
+   24|      0|JsonObj &JsonObj::operator[](const std::string &str) {
+   25|      0|	switch (this->jsonBaseType) {
+   26|      0|		case JsonBaseType::JsonMapType: {
+   27|      0|			return *(((JsonMap *)this)->data[str].get());
+   28|      0|		}
+   29|      0|		default: {
+   30|      0|			throw JsonTypeError("不是JsonMap类型");
+   31|      0|		}
+   32|      0|	}
+   33|      0|};  // namespace utils
+   34|      0|JsonObj &JsonObj::operator[](std::string &&str) {
+   35|      0|	switch (this->jsonBaseType) {
+   36|      0|		case JsonBaseType::JsonBoolType:
+   37|      0|		case JsonBaseType::JsonDoubleType:
+   38|      0|		case JsonBaseType::JsonIntegerType:
+   39|      0|		case JsonBaseType::JsonNull:
+   40|      0|		case JsonBaseType::JsonArrayType:
+   41|      0|		case JsonBaseType::JsonStringType: {
+   42|      0|			throw JsonTypeError("不是JsonMap类型");
+   43|      0|		}
+   44|      0|		case JsonBaseType::JsonMapType: {
+   45|      0|			return *(((JsonMap *)this)->data[std::move(str)].get());
+   46|      0|		}
+   47|      0|	}
+   48|      0|};
+   49|      2|void *JsonObj::getData() {
+   50|      2|	switch (this->jsonBaseType) {
+   51|      0|		case JsonBaseType::JsonNull: {
+   52|      0|			return nullptr;
+   53|      0|		}
+   54|      0|		case JsonBaseType::JsonDoubleType: {
+   55|      0|			return &(((JsonDouble *)this)->data);
+   56|      0|		}
+   57|      0|		case JsonBaseType::JsonIntegerType: {
+   58|      0|			return &(((JsonInteger *)this)->data);
+   59|      0|		}
+   60|      0|		case JsonBaseType::JsonBoolType: {
+   61|      0|			return &(((JsonBool *)this)->data);
+   62|      0|		}
+   63|      0|		case JsonBaseType::JsonMapType: {
+   64|      0|			return &(((JsonMap *)this)->data);
+   65|      0|		}
+   66|      0|		case JsonBaseType::JsonArrayType: {
+   67|      0|			return &(((JsonArray *)this)->data);
+   68|      0|		}
+   69|      2|		case JsonBaseType::JsonStringType: {
+   70|      2|			return &(((JsonString *)this)->data);
+   71|      0|		}
+   72|      0|		default: {
+   73|      0|			throw std::invalid_argument("错误的json对象类型" +
+   74|      0|			                            std::to_string((int)this->jsonBaseType));
+   75|      0|		}
+   76|      2|	}
+   77|      2|}
+   78|       |JsonArray::JsonArray(const std::vector<std::unique_ptr<JsonObj>> &vec)
+   79|      0|    : JsonObj(JsonBaseType::JsonArrayType) {
+   80|      0|	using namespace std;
+   81|       |
+   82|      0|	data.clear();
+   83|      0|	data.reserve(vec.size());
+   84|      0|	for (auto &&p : vec) {
+   85|      0|		switch (p->jsonBaseType) {
+   86|      0|			case JsonBaseType::JsonIntegerType: {
+   87|      0|				data.push_back(make_unique<JsonInteger>(((JsonInteger *)p.get())->data));
+   88|      0|				break;
+   89|      0|			}
+   90|      0|			case JsonBaseType::JsonDoubleType: {
+   91|      0|				data.push_back(make_unique<JsonDouble>(((JsonDouble *)p.get())->data));
+   92|      0|				break;
+   93|      0|			}
+   94|      0|			case JsonBaseType::JsonStringType: {
+   95|      0|				data.push_back(make_unique<JsonString>(((JsonString *)p.get())->data));
+   96|      0|				break;
+   97|      0|			}
+   98|      0|			case JsonBaseType::JsonArrayType: {
+   99|      0|				data.push_back(make_unique<JsonArray>(((JsonArray *)p.get())->data));
+  100|      0|				break;
+  101|      0|			}
+  102|      0|			case JsonBaseType::JsonMapType: {
+  103|      0|				data.push_back(make_unique<JsonMap>(((JsonMap *)p.get())->data));
+  104|      0|				break;
+  105|      0|			}
+  106|      0|			case JsonBaseType::JsonNull: {
+  107|      0|				data.push_back(make_unique<JsonObj>());
+  108|      0|				break;
+  109|      0|			}
+  110|      0|			case JsonBaseType::JsonBoolType: {
+  111|      0|				data.push_back(make_unique<JsonBool>(((JsonBool *)p.get())->data));
+  112|      0|				break;
+  113|      0|			}
+  114|      0|		}
+  115|      0|	}
+  116|      0|}
+  117|      0|JsonArray::JsonArray(const JsonArray &o) : JsonArray(o.data) {}
+  118|      0|JsonArray &JsonArray::operator=(const JsonArray &o) {
+  119|      0|	if (&o == this) return *this;
+  120|      0|	using namespace std;
+  121|      0|	const auto &vec = o.data;
+  122|      0|	jsonBaseType = JsonBaseType::JsonArrayType;
+  123|      0|	data.clear();
+  124|      0|	data.reserve(vec.size());
+  125|      0|	for (auto &&p : vec) {
+  126|      0|		switch (p->jsonBaseType) {
+  127|      0|			case JsonBaseType::JsonIntegerType: {
+  128|      0|				data.push_back(move(make_unique<JsonInteger>(((JsonInteger *)p.get())->data)));
+  129|      0|				break;
+  130|      0|			}
+  131|      0|			case JsonBaseType::JsonDoubleType: {
+  132|      0|				data.push_back(make_unique<JsonDouble>(((JsonDouble *)p.get())->data));
+  133|      0|				break;
+  134|      0|			}
+  135|      0|			case JsonBaseType::JsonStringType: {
+  136|      0|				data.push_back(make_unique<JsonString>(((JsonString *)p.get())->data));
+  137|      0|				break;
+  138|      0|			}
+  139|      0|			case JsonBaseType::JsonArrayType: {
+  140|      0|				data.push_back(make_unique<JsonArray>(((JsonArray *)p.get())->data));
+  141|      0|				break;
+  142|      0|			}
+  143|      0|			case JsonBaseType::JsonMapType: {
+  144|      0|				data.push_back(make_unique<JsonMap>(((JsonMap *)p.get())->data));
+  145|      0|				break;
+  146|      0|			}
+  147|      0|			default:
+  148|      0|				break;
+  149|      0|		}
+  150|      0|	}
+  151|      0|	return *this;
+  152|      0|}
+  153|      0|JsonArray &JsonArray::operator=(JsonArray &&o) noexcept {
+  154|      0|	if (&o == this)[[unlikely]] return *this;
+  155|      0|	this->data.swap(o.data);
+  156|      0|	return *this;
+  157|      0|}
+  158|      0|JsonMap::JsonMap(const JsonMapImpl &m) : JsonObj(JsonBaseType::JsonMapType) {
+  159|      0|	using namespace std;
+  160|       |
+  161|      0|	data.clear();
+  162|      0|	for (auto &&[k, v] : m) {
+  163|      0|		switch (v->jsonBaseType) {
+  164|      0|			case (JsonBaseType::JsonIntegerType): {
+  165|      0|				data.insert_or_assign(k, make_unique<JsonInteger>(((JsonInteger *)v.get())->data));
+  166|      0|				break;
+  167|      0|			}
+  168|      0|			case (JsonBaseType::JsonDoubleType): {
+  169|      0|				data.insert_or_assign(k, make_unique<JsonDouble>(((JsonDouble *)v.get())->data));
+  170|      0|				break;
+  171|      0|			}
+  172|      0|			case (JsonBaseType::JsonStringType): {
+  173|      0|				data.insert_or_assign(k, make_unique<JsonString>(((JsonString *)v.get())->data));
+  174|      0|				break;
+  175|      0|			}
+  176|      0|			case (JsonBaseType::JsonArrayType): {
+  177|      0|				data.insert_or_assign(k, make_unique<JsonArray>(((JsonArray *)v.get())->data));
+  178|      0|				break;
+  179|      0|			}
+  180|      0|			case (JsonBaseType::JsonMapType): {
+  181|      0|				data.insert_or_assign(k, make_unique<JsonMap>(((JsonMap *)v.get())->data));
+  182|      0|				break;
+  183|      0|			}
+  184|      0|			case (JsonBaseType::JsonBoolType): {
+  185|      0|				data.insert_or_assign(k, make_unique<JsonBool>(((JsonBool *)v.get())->data));
+  186|      0|				break;
+  187|      0|			}
+  188|      0|			case (JsonBaseType::JsonNull): {
+  189|      0|				data.insert_or_assign(k, make_unique<JsonObj>());
+  190|      0|				break;
+  191|      0|			}
+  192|      0|			default:
+  193|      0|				break;
+  194|      0|		}
+  195|      0|	}
+  196|      0|}
+  197|      0|JsonMap::JsonMap(const JsonMap &m) : JsonMap(m.data) {
+  198|       |	// this->jsonBaseType = JsonBaseType::JsonMapType;
+  199|      0|}
+  200|      0|JsonMap &JsonMap::operator=(const JsonMap &o) {
+  201|      0|	if (&o == this) return *this;
+  202|      0|	jsonBaseType = JsonBaseType::JsonMapType;
+  203|      0|	data.clear();
+  204|      0|	using namespace std;
+  205|      0|	for (auto &&[k, v] : o.data) {
+  206|      0|		switch (v->jsonBaseType) {
+  207|      0|			case (JsonBaseType::JsonIntegerType): {
+  208|      0|				data.insert_or_assign(k, make_unique<JsonInteger>(((JsonInteger *)v.get())->data));
+  209|      0|				break;
+  210|      0|			}
+  211|      0|			case (JsonBaseType::JsonDoubleType): {
+  212|      0|				data.insert_or_assign(k, make_unique<JsonDouble>(((JsonDouble *)v.get())->data));
+  213|      0|				break;
+  214|      0|			}
+  215|      0|			case (JsonBaseType::JsonStringType): {
+  216|      0|				data.insert_or_assign(k, make_unique<JsonString>(((JsonString *)v.get())->data));
+  217|      0|				break;
+  218|      0|			}
+  219|      0|			case (JsonBaseType::JsonArrayType): {
+  220|      0|				data.insert_or_assign(k, make_unique<JsonArray>(((JsonArray *)v.get())->data));
+  221|      0|				break;
+  222|      0|			}
+  223|      0|			case (JsonBaseType::JsonMapType): {
+  224|      0|				data.insert_or_assign(k, make_unique<JsonMap>(((JsonMap *)v.get())->data));
+  225|      0|				break;
+  226|      0|			}
+  227|      0|			case (JsonBaseType::JsonBoolType): {
+  228|      0|				data.insert_or_assign(k, make_unique<JsonBool>(((JsonBool *)v.get())->data));
+  229|      0|				break;
+  230|      0|			}
+  231|      0|			case (JsonBaseType::JsonNull): {
+  232|      0|				data.insert_or_assign(k, make_unique<JsonObj>());
+  233|      0|				break;
+  234|      0|			}
+  235|      0|			default:
+  236|      0|				break;
+  237|      0|		}
+  238|      0|	}
+  239|      0|	return *this;
+  240|      0|}
+  241|      1|JsonMap &JsonMap::operator=(JsonMap &&o) noexcept {
+  242|      1|	if (&o == this)[[unlikely]] return *this;
+  243|      1|	this->jsonBaseType = JsonObj::JsonBaseType::JsonMapType;
+  244|      1|	this->data.swap(o.data);
+  245|      1|	return *this;
+  246|      1|}
+  247|      1|std::unique_ptr<JsonObj> JsonParser::parse(const std::string_view view) {
+  248|      1|	using namespace std;
+  249|      1|	ssize_t startIndex = 0;
+  250|      1|	auto res = make_unique<JsonObj>();
+  251|      1|	while (startIndex < view.size()) {
+  252|      1|		switch (view[startIndex]) {
+  253|      1|			case '{': {
+  254|      1|				res = parseMap(view, startIndex);
+  255|      1|				while (startIndex < view.size()) {
+  256|      0|					switch (view[startIndex]) {
+  257|      0|						case ' ':
+  258|      0|						case '\r':
+  259|      0|						case '\t':
+  260|      0|						case '\n': {
+  261|      0|							startIndex++;
+  262|      0|							break;
+  263|      0|						}
+  264|      0|						default:
+  265|      0|							throw JsonParseError("Json解析错误 : 末尾非法字符");
+  266|      0|					}
+  267|      0|				}
+  268|      1|				return res;
+  269|      1|			}
+  270|      0|			case '[': {
+  271|      0|				res = parseArray(view, startIndex);
+  272|      0|				while (startIndex < view.size()) {
+  273|      0|					cout << view.size() << endl;
+  274|      0|					switch (view[startIndex]) {
+  275|      0|						case ' ':
+  276|      0|						case '\r':
+  277|      0|						case '\t':
+  278|      0|						case '\n': {
+  279|      0|							startIndex++;
+  280|      0|							break;
+  281|      0|						}
+  282|      0|						default:
+  283|      0|							throw JsonParseError("Json解析错误 : 末尾非法字符");
+  284|      0|					}
+  285|      0|				}
+  286|      0|				return res;
+  287|      0|			}
+  288|      0|			case ' ':
+  289|      0|			case '\r':
+  290|      0|			case '\t':
+  291|      0|			case '\n': {
+  292|      0|				startIndex++;
+  293|      0|				break;
+  294|      0|			}
+  295|      0|			default:
+  296|      0|				throw JsonParseError("Json解析错误 : 非法字符");
+  297|      1|		}
+  298|      1|	}
+  299|      0|	return res;
+  300|      1|};
+  301|       |
+  302|      0|std::unique_ptr<JsonObj> JsonParser::parseNum(const std::string_view view, ssize_t &startIndex) {
+  303|      0|	using namespace std::string_literals;
+  304|      0|	bool isDouble = false;
+  305|      0|	auto getNum = [&]() -> void {
+  306|      0|		ss_.str("");
+  307|      0|		ss_.clear();
+  308|      0|		for (ssize_t i = startIndex; i < view.size(); ++i) {
+  309|      0|			switch (view[i]) {
+  310|      0|				case '.': {
+  311|      0|					isDouble = true;
+  312|      0|					ss_.put('.');
+  313|      0|					break;
+  314|      0|				}
+  315|      0|				case 'e': {
+  316|      0|					isDouble = true;
+  317|      0|					ss_.put('e');
+  318|      0|					break;
+  319|      0|				}
+  320|      0|				case 'E': {
+  321|      0|					isDouble = true;
+  322|      0|					ss_.put('E');
+  323|      0|					break;
+  324|      0|				}
+  325|      0|				case '-': {
+  326|      0|					ss_.put('-');
+  327|      0|					break;
+  328|      0|				}
+  329|      0|				case '+': {
+  330|      0|					ss_.put('+');
+  331|      0|					break;
+  332|      0|				}
+  333|      0|				case '0': {
+  334|      0|					ss_.put('0');
+  335|      0|					break;
+  336|      0|				}
+  337|      0|				case '1': {
+  338|      0|					ss_.put('1');
+  339|      0|					break;
+  340|      0|				}
+  341|      0|				case '2': {
+  342|      0|					ss_.put('2');
+  343|      0|					break;
+  344|      0|				}
+  345|      0|				case '3': {
+  346|      0|					ss_.put('3');
+  347|      0|					break;
+  348|      0|				}
+  349|      0|				case '4': {
+  350|      0|					ss_.put('4');
+  351|      0|					break;
+  352|      0|				}
+  353|      0|				case '5': {
+  354|      0|					ss_.put('5');
+  355|      0|					break;
+  356|      0|				}
+  357|      0|				case '6': {
+  358|      0|					ss_.put('6');
+  359|      0|					break;
+  360|      0|				}
+  361|      0|				case '7': {
+  362|      0|					ss_.put('7');
+  363|      0|					break;
+  364|      0|				}
+  365|      0|				case '8': {
+  366|      0|					ss_.put('8');
+  367|      0|					break;
+  368|      0|				}
+  369|      0|				case '9': {
+  370|      0|					ss_.put('9');
+  371|      0|					break;
+  372|      0|				}
+  373|      0|				default: {
+  374|      0|					startIndex = i;
+  375|      0|					return;
+  376|      0|				}
+  377|      0|			}
+  378|      0|		}
+  379|      0|		throw JsonParseError("字符串解析错误 : "s + std::string(view));
+  380|      0|	};
+  381|       |	// size_t len = getLength();
+  382|      0|	getNum();
+  383|      0|	if (isDouble) {
+  384|      0|		double num = 0;
+  385|      0|		ss_ >> num;
+  386|      0|		return std::make_unique<JsonDouble>(num);
+  387|      0|	}
+  388|      0|	int64_t num = 0;
+  389|      0|	ss_ >> num;
+  390|      0|	return std::make_unique<JsonInteger>(num);
+  391|      0|}
+  392|       |std::unique_ptr<JsonString> JsonParser::parseString(const std::string_view view,
+  393|      4|                                                    ssize_t &startIndex) {
+  394|      4|	using namespace std;
+  395|      4|	char ch = view[startIndex];
+  396|      4|	assert(view[startIndex] == '\"');
+  397|      4|	bool isEscape = false;
+  398|       |
+  399|      4|	string s;
+  400|      4|	if (view.size() - startIndex <= 3) throw JsonParseError("字符串解析错误 : "s + string(view));
+  401|      4|	startIndex++;
+  402|       |
+  403|      4|	auto unicodeToWchar = [](const char *ptr) -> wchar_t {
+  404|      0|		wchar_t res = 0;
+  405|      0|		for (int i = 0; i < 4; ++i) {
+  406|      0|			char c = ptr[i];
+  407|      0|			if ('0' <= c && c <= '9') {
+  408|      0|				res |= ((c - '0') << (4 * (3 - i)));
+  409|      0|			} else if ('a' <= c && c <= 'f') {
+  410|      0|				res |= ((c - 'a' + 10) << (4 * (3 - i)));
+  411|      0|			} else if ('A' <= c && c <= 'F') {
+  412|      0|				res |= ((c - 'A' + 10) << (4 * (3 - i)));
+  413|      0|			} else {
+  414|      0|				throw JsonParseError("字符串解析错误 : \\u后为 "s + string(ptr, 4));
+  415|      0|			}
+  416|      0|		}
+  417|      0|		return res;
+  418|      0|	};
+  419|      4|	auto getString = [&]() -> void {
+  420|     86|		while (startIndex < view.size()) {
+  421|     86|			char c = view[startIndex];
+  422|     86|			if (c >= 0 && c <= 31) {
+  423|      0|				throw JsonParseError("json字符串中不能含有控制字符");
+  424|      0|			}
+  425|     86|			switch (c) {
+  426|      0|				case '\\': {
+  427|      0|					startIndex++;
+  428|      0|					if (startIndex >= view.size() - 2) {
+  429|      0|						throw JsonParseError("字符串解析错误 : "s + string(view));
+  430|      0|					}
+  431|      0|					c = view[startIndex];
+  432|      0|					if (c >= 0 && c <= 31) {
+  433|      0|						throw JsonParseError("json字符串中不能含有控制字符");
+  434|      0|					}
+  435|      0|					switch (c) {
+  436|      0|						case '\"': {
+  437|      0|							s.push_back('\"');
+  438|      0|							startIndex++;
+  439|      0|							break;
+  440|      0|						}
+  441|      0|						case '\\': {
+  442|      0|							s.push_back('\\');
+  443|      0|							startIndex++;
+  444|      0|							break;
+  445|      0|						}
+  446|      0|						case '/': {
+  447|      0|							s.push_back('/');
+  448|      0|							startIndex++;
+  449|      0|							break;
+  450|      0|						}
+  451|      0|						case 'b': {
+  452|      0|							s.push_back('\b');
+  453|      0|							startIndex++;
+  454|      0|							break;
+  455|      0|						}
+  456|      0|						case 'f': {
+  457|      0|							s.push_back('\f');
+  458|      0|							startIndex++;
+  459|      0|							break;
+  460|      0|						}
+  461|      0|						case 'n': {
+  462|      0|							s.push_back('\n');
+  463|      0|							startIndex++;
+  464|      0|							break;
+  465|      0|						}
+  466|      0|						case 'r': {
+  467|      0|							s.push_back('\r');
+  468|      0|							startIndex++;
+  469|      0|							break;
+  470|      0|						}
+  471|      0|						case 't': {
+  472|      0|							s.push_back('\t');
+  473|      0|							startIndex++;
+  474|      0|							break;
+  475|      0|						}
+  476|      0|						case 'u': {
+  477|      0|							if (startIndex + 5 >= view.size() - 1) {
+  478|      0|								throw JsonParseError("字符串解析错误 : "s + string(view));
+  479|      0|							}
+  480|       |
+  481|      0|							auto utf8 = co_uring_web::utils::fromUnicode(
+  482|      0|							    unicodeToWchar(&view[startIndex + 1]));
+  483|      0|							for (int i = 0; i < utf8.bytes[0]; ++i) {
+  484|      0|								s.push_back(utf8.bytes[i + 1]);
+  485|      0|							}
+  486|      0|							startIndex += 5;
+  487|      0|							break;
+  488|      0|						}
+  489|      0|						default: {
+  490|      0|							throw JsonParseError("字符串解析错误 : "s + string(view));
+  491|      0|						}
+  492|      0|					}
+  493|      0|					break;
+  494|      0|				}
+  495|      4|				case '\"': {
+  496|      4|					startIndex++;
+  497|      4|					return;
+  498|      0|				};
+  499|     82|				default: {
+  500|     82|					s.push_back(c);
+  501|     82|					startIndex++;
+  502|     82|					break;
+  503|      0|				}
+  504|     86|			}
+  505|     86|		}
+  506|      4|	};
+  507|      4|	getString();
+  508|       |
+  509|      4|	return make_unique<JsonString>(move(s));
+  510|      4|};
+  511|      0|std::unique_ptr<JsonBool> JsonParser::parseBool(const std::string_view view, ssize_t &startIndex) {
+  512|      0|	using namespace std;
+  513|      0|	if (startIndex + 3 >= view.size() - 1)
+  514|      0|		throw JsonParseError("bool类型解析错误 : "s + string(view));
+  515|       |
+  516|      0|	if (string_view {&(view[startIndex]), 4} == "true") {
+  517|      0|		startIndex += 4;
+  518|      0|		return make_unique<JsonBool>(true);
+  519|      0|	}
+  520|      0|	if (startIndex + 5 <= view.size() - 1 && string_view {&(view[startIndex]), 5} == "false") {
+  521|      0|		startIndex += 5;
+  522|      0|		return make_unique<JsonBool>(false);
+  523|      0|	}
+  524|      0|	throw JsonParseError("bool类型解析错误 : "s + string(view));
+  525|       |
+  526|      0|}  // namespace utils
+  527|       |
+  528|       |std::unique_ptr<JsonArray> JsonParser::parseArray(const std::string_view view,
+  529|      0|                                                  ssize_t &startIndex) {
+  530|      0|	using namespace std;
+  531|      0|	assert(view[startIndex] == '[');
+  532|      0|	if (startIndex + 1 > view.size() - 1) throw JsonParseError("列表解析错误 : 方括号错误");
+  533|      0|	startIndex++;
+  534|      0|	auto res = make_unique<JsonArray>();
+  535|      0|	vector<unique_ptr<JsonObj>> &vec = res->data;
+  536|      0|	bool endByComma = false;
+  537|      0|	while (startIndex < view.size()) {
+  538|      0|		char c = view[startIndex];
+  539|      0|		switch (c) {
+  540|      0|			case ',': {
+  541|      0|				if (endByComma) throw JsonParseError("列表解析错误 : 逗号错误");
+  542|      0|				endByComma = true;
+  543|      0|				startIndex++;
+  544|      0|				break;
+  545|      0|			}
+  546|      0|			case '[': {
+  547|      0|				vec.push_back(parseArray(view, startIndex));
+  548|      0|				endByComma = false;
+  549|      0|				startIndex++;
+  550|      0|				break;
+  551|      0|			}
+  552|      0|			case ']': {
+  553|      0|				startIndex++;
+  554|      0|				return res;
+  555|      0|			}
+  556|      0|			case '{': {
+  557|      0|				vec.push_back(parseMap(view, startIndex));
+  558|      0|				endByComma = false;
+  559|      0|				break;
+  560|      0|			}
+  561|      0|			case 'n': {
+  562|      0|				if (startIndex + 4 < view.size() && string_view(&(view[startIndex]), 4) == "null") {
+  563|      0|					vec.emplace_back();
+  564|      0|					startIndex += 4;
+  565|      0|					endByComma = false;
+  566|      0|					break;
+  567|      0|				}
+  568|      0|				throw JsonParseError("列表解析错误 : 非法字符 " +
+  569|      0|				                     string(view.data() + startIndex, view.size() - startIndex));
+  570|      0|			}
+  571|      0|			case 't':
+  572|      0|			case 'f': {
+  573|      0|				vec.push_back(parseBool(view, startIndex));
+  574|      0|				endByComma = false;
+  575|      0|				break;
+  576|      0|			}
+  577|      0|			case '\"': {
+  578|      0|				vec.push_back(parseString(view, startIndex));
+  579|      0|				endByComma = false;
+  580|      0|				break;
+  581|      0|			}
+  582|      0|			case ' ':
+  583|      0|			case '\r':
+  584|      0|			case '\t':
+  585|      0|			case '\n': {
+  586|      0|				startIndex++;
+  587|      0|				break;
+  588|      0|			}
+  589|      0|			case '-':
+  590|      0|			case '0':
+  591|      0|			case '1':
+  592|      0|			case '2':
+  593|      0|			case '3':
+  594|      0|			case '4':
+  595|      0|			case '5':
+  596|      0|			case '6':
+  597|      0|			case '7':
+  598|      0|			case '8':
+  599|      0|			case '9': {
+  600|      0|				vec.push_back(parseNum(view, startIndex));
+  601|      0|				endByComma = false;
+  602|      0|				break;
+  603|      0|			}
+  604|      0|			default:
+  605|      0|				throw JsonParseError("列表解析错误 : 非法字符");
+  606|      0|		}
+  607|      0|	}
+  608|      0|	throw JsonParseError("列表解析错误 : 非法字符");
+  609|      0|}
+  610|      1|std::unique_ptr<JsonMap> JsonParser::parseMap(const std::string_view view, ssize_t &startIndex) {
+  611|      1|	using namespace std;
+  612|      1|	assert(view[startIndex] == '{');
+  613|      1|	if (startIndex + 1 > view.size() - 1) throw JsonParseError("列表解析错误 : 大括号错误");
+  614|      1|	startIndex++;
+  615|      1|	auto res = make_unique<JsonMap>();
+  616|      1|	enum parseState { keyStart = 0, keyEnd = 1, valueStart = 2, valueEnd = 3 };
+  617|      1|	parseState state;
+  618|      1|	state = keyStart;
+  619|      1|	string str;
+  620|     19|	while (startIndex < view.size()) {
+  621|     19|		char c = view[startIndex];
+  622|       |
+  623|     19|		switch (c) {
+  624|      8|			case ' ':
+  625|      8|			case '\r':
+  626|      8|			case '\t':
+  627|     11|			case '\n': {
+  628|     11|				startIndex++;
+  629|     11|				break;
+  630|      8|			}
+  631|      1|			case ',': {
+  632|      1|				if (state != valueEnd) {
+  633|      0|					throw JsonParseError("Map解析错误 : 逗号错误");
+  634|      1|				};
+  635|      1|				state = keyStart;
+  636|      1|				startIndex++;
+  637|      1|				break;
+  638|      1|			}
+  639|      4|			case '\"': {
+  640|      4|				if (state == keyStart) {
+  641|      2|					swap(str, parseString(view, startIndex)->data);
+  642|      2|					state = keyEnd;
+  643|      2|					break;
+  644|      2|				}
+  645|      2|				if (state == valueStart) {
+  646|      2|					res->data.insert_or_assign(move(str), move(parseString(view, startIndex)));
+  647|      2|					state = valueEnd;
+  648|      2|					break;
+  649|      2|				}
+  650|      0|				throw JsonParseError("Map解析错误 : 格式错误");
+  651|      2|			}
+  652|      2|			case ':': {
+  653|      2|				if (state != keyEnd) {
+  654|      0|					throw JsonParseError("Map解析错误 : 格式错误");
+  655|      0|				}
+  656|      2|				startIndex++;
+  657|      2|				state = valueStart;
+  658|      2|				break;
+  659|      2|			}
+  660|      0|			case 't':
+  661|      0|			case 'f': {
+  662|      0|				if (state != valueStart) {
+  663|      0|					throw JsonParseError("Map解析错误 : 格式错误");
+  664|      0|				}
+  665|      0|				res->data.insert_or_assign(move(str), move(parseBool(view, startIndex)));
+  666|      0|				state = valueEnd;
+  667|      0|				break;
+  668|      0|			}
+  669|      0|			case 'n': {
+  670|      0|				if (state != valueStart) {
+  671|      0|					throw JsonParseError("Map解析错误 : 格式错误");
+  672|      0|				}
+  673|      0|				if (startIndex + 4 < view.size() && string_view(&(view[startIndex]), 4) == "null") {
+  674|      0|					res->data.insert_or_assign(move(str), make_unique<JsonObj>());
+  675|      0|					state = valueEnd;
+  676|      0|					startIndex += 4;
+  677|      0|					break;
+  678|      0|				}
+  679|      0|				throw JsonParseError("Map解析错误 : 非法字符");
+  680|      0|			}
+  681|      0|			case '-':
+  682|      0|			case '0':
+  683|      0|			case '1':
+  684|      0|			case '2':
+  685|      0|			case '3':
+  686|      0|			case '4':
+  687|      0|			case '5':
+  688|      0|			case '6':
+  689|      0|			case '7':
+  690|      0|			case '8':
+  691|      0|			case '9': {
+  692|      0|				if (state != valueStart) {
+  693|      0|					throw JsonParseError("Map解析错误 : 格式错误");
+  694|      0|				}
+  695|      0|				res->data.insert_or_assign(move(str), move(parseNum(view, startIndex)));
+  696|      0|				state = valueEnd;
+  697|      0|				break;
+  698|      0|			}
+  699|      0|			case '[': {
+  700|      0|				if (state != valueStart) {
+  701|      0|					throw JsonParseError("Map解析错误 : 格式错误");
+  702|      0|				}
+  703|      0|				res->data.insert_or_assign(move(str), parseArray(view, startIndex));
+  704|      0|				state = valueEnd;
+  705|      0|				break;
+  706|      0|			}
+  707|      0|			case '{': {
+  708|      0|				if (state != valueStart) {
+  709|      0|					throw JsonParseError("Map解析错误 : 格式错误");
+  710|      0|				}
+  711|      0|				res->data.insert_or_assign(move(str), parseMap(view, startIndex));
+  712|      0|				state = valueEnd;
+  713|      0|				break;
+  714|      0|			}
+  715|      1|			case '}': {
+  716|      1|				if (state != valueEnd) {
+  717|      0|					throw JsonParseError("Map解析错误 : 格式错误");
+  718|      0|				}
+  719|      1|				startIndex++;
+  720|      1|				return res;
+  721|      1|			}
+  722|      0|			default: {
+  723|      0|				throw JsonParseError("Map解析错误 : 非法字符");
+  724|      1|			}
+  725|     19|		}
+  726|     19|	}
+  727|      0|	throw JsonParseError("Map解析错误 : 格式错误");
+  728|      1|}
+  729|       |
+  730|      0|std::string JsonParser::dump(const JsonObj *obj, int indent) {
+  731|      0|	using namespace std;
+  732|      0|	string res;
+  733|      0|	res.reserve(2048);
+  734|      0|	switch (obj->jsonBaseType) {
+  735|      0|		case JsonObj::JsonBaseType::JsonArrayType: {
+  736|      0|			dumpArray((const JsonArray *)obj, res, 0, indent, true);
+  737|      0|			return res;
+  738|      0|		}
+  739|      0|		case JsonObj::JsonBaseType::JsonMapType: {
+  740|      0|			dumpMap((const JsonMap *)obj, res, 0, indent, true);
+  741|      0|			return res;
+  742|      0|		}
+  743|      0|		default: {
+  744|      0|			throw JsonParseError("dump错误 : 不是array或map类型");
+  745|      0|		}
+  746|      0|	}
+  747|      0|};
+  748|      0|void JsonParser::dumpNum(const JsonObj *jn, std::string &res) {
+  749|      0|	assert(jn->jsonBaseType == JsonObj::JsonBaseType::JsonIntegerType ||
+  750|      0|	       jn->jsonBaseType == JsonObj::JsonBaseType::JsonDoubleType);
+  751|      0|	if (jn->jsonBaseType == JsonObj::JsonBaseType::JsonIntegerType) {
+  752|      0|		ss_.str("");
+  753|      0|		ss_.clear();
+  754|      0|		ss_ << static_cast<const JsonInteger *>(jn)->data;
+  755|      0|		res.append(ss_.str());
+  756|      0|	} else {
+  757|      0|		ss_.str("");
+  758|      0|		ss_.clear();
+  759|      0|		ss_ << static_cast<const JsonDouble *>(jn)->data;
+  760|      0|		res.append(ss_.str());
+  761|      0|	}
+  762|      0|	return;
+  763|      0|};
+  764|       |
+  765|      0|void JsonParser::dumpString(const JsonString *js, std::string &res) { dumpString(js->data, res); }
+  766|      0|void JsonParser::dumpString(const std::string_view view, std::string &res) {
+  767|      0|	res.push_back('\"');
+  768|      0|	for (const char c : view) {
+  769|      0|		switch (c) {
+  770|      0|			case '\"': {
+  771|      0|				res.append("\\\"");
+  772|      0|				break;
+  773|      0|			}
+  774|      0|			case '\\': {
+  775|      0|				res.append("\\\\");
+  776|      0|				break;
+  777|      0|			}
+  778|       |			// case '/': {
+  779|       |			//     res.append("\\/");
+  780|       |			//     break;
+  781|       |			// }
+  782|      0|			case '\b': {
+  783|      0|				res.append("\\b");
+  784|      0|				break;
+  785|      0|			}
+  786|      0|			case '\f': {
+  787|      0|				res.append("\\f");
+  788|      0|				break;
+  789|      0|			}
+  790|      0|			case '\n': {
+  791|      0|				res.append("\\n");
+  792|      0|				break;
+  793|      0|			}
+  794|      0|			case '\r': {
+  795|      0|				res.append("\\r");
+  796|      0|				break;
+  797|      0|			}
+  798|      0|			case '\t': {
+  799|      0|				res.append("\\t");
+  800|      0|				break;
+  801|      0|			}
+  802|      0|			default: {
+  803|      0|				res.push_back(c);
+  804|      0|				break;
+  805|      0|			}
+  806|      0|		}
+  807|      0|	}
+  808|      0|	res.push_back('\"');
+  809|      0|}
+  810|      0|void JsonParser::dumpBool(const JsonBool *jb, std::string &res) {
+  811|      0|	if (jb->data) {
+  812|      0|		res.append("true");
+  813|       |
+  814|      0|	} else {
+  815|      0|		res.append("false");
+  816|      0|	}
+  817|      0|}
+  818|       |void JsonParser::dumpArray(const JsonArray *ja, std::string &res, int depth, int indent,
+  819|      0|                           bool singleLine) {
+  820|      0|	res.push_back('[');
+  821|      0|	if (ja->data.empty()) {
+  822|      0|		res.push_back(']');
+  823|      0|		return;
+  824|      0|	}
+  825|      0|	for (auto it = ja->data.begin(); it != ja->data.end(); ++it) {
+  826|      0|		const auto &o = *it;
+  827|      0|		res.push_back('\n');
+  828|      0|		for (int i = 0; i < depth + 1; ++i) {
+  829|      0|			for (int j = 0; j < indent; ++j) {
+  830|      0|				res.push_back(' ');
+  831|      0|			}
+  832|      0|		}
+  833|      0|		switch (o->jsonBaseType) {
+  834|      0|			case JsonObj::JsonBaseType::JsonStringType: {
+  835|      0|				dumpString((const JsonString *)o.get(), res);
+  836|      0|				break;
+  837|      0|			}
+  838|      0|			case JsonObj::JsonBaseType::JsonBoolType: {
+  839|      0|				dumpBool((const JsonBool *)o.get(), res);
+  840|      0|				break;
+  841|      0|			}
+  842|      0|			case JsonObj::JsonBaseType::JsonDoubleType:
+  843|      0|			case JsonObj::JsonBaseType::JsonIntegerType: {
+  844|      0|				dumpNum((const JsonObj *)o.get(), res);
+  845|      0|				break;
+  846|      0|			}
+  847|      0|			case JsonObj::JsonBaseType::JsonNull: {
+  848|      0|				dumpNull(res);
+  849|      0|				break;
+  850|      0|			}
+  851|      0|			case JsonObj::JsonBaseType::JsonArrayType: {
+  852|      0|				dumpArray((const JsonArray *)o.get(), res, depth + 1, indent, true);
+  853|      0|				break;
+  854|      0|			}
+  855|      0|			case JsonObj::JsonBaseType::JsonMapType: {
+  856|      0|				dumpMap((const JsonMap *)o.get(), res, depth + 1, indent, true);
+  857|      0|				break;
+  858|      0|			}
+  859|      0|		}
+  860|      0|		if (std::distance(it, ja->data.end()) != 1) {
+  861|      0|			res.push_back(',');
+  862|      0|		}
+  863|      0|	}
+  864|      0|	res.push_back('\n');
+  865|      0|	for (int i = 0; i < depth; ++i) {
+  866|      0|		for (int j = 0; j < indent; ++j) {
+  867|      0|			res.push_back(' ');
+  868|      0|		}
+  869|      0|	}
+  870|      0|	res.push_back(']');
+  871|      0|}
+  872|       |void JsonParser::dumpMap(const JsonMap *jm, std::string &res, int depth, int indent,
+  873|      0|                         bool singleLine) {
+  874|      0|	res.push_back('{');
+  875|      0|	if (jm->data.empty()) {
+  876|      0|		res.push_back('}');
+  877|      0|		return;
+  878|      0|	}
+  879|      0|	for (auto it = jm->data.begin(); it != jm->data.end(); ++it) {
+  880|      0|		const auto &o = *it;
+  881|      0|		res.push_back('\n');
+  882|      0|		for (int i = 0; i < depth + 1; ++i) {
+  883|      0|			for (int j = 0; j < indent; ++j) {
+  884|      0|				res.push_back(' ');
+  885|      0|			}
+  886|      0|		}
+  887|      0|		dumpString(o.first, res);
+  888|      0|		res.append(" : ");
+  889|      0|		const auto &v = o.second;
+  890|      0|		switch (v->jsonBaseType) {
+  891|      0|			case JsonObj::JsonBaseType::JsonStringType: {
+  892|      0|				dumpString((const JsonString *)v.get(), res);
+  893|      0|				break;
+  894|      0|			}
+  895|      0|			case JsonObj::JsonBaseType::JsonBoolType: {
+  896|      0|				dumpBool((const JsonBool *)v.get(), res);
+  897|      0|				break;
+  898|      0|			}
+  899|      0|			case JsonObj::JsonBaseType::JsonDoubleType:
+  900|      0|			case JsonObj::JsonBaseType::JsonIntegerType: {
+  901|      0|				dumpNum((const JsonObj *)v.get(), res);
+  902|      0|				break;
+  903|      0|			}
+  904|      0|			case JsonObj::JsonBaseType::JsonNull: {
+  905|      0|				dumpNull(res);
+  906|      0|				break;
+  907|      0|			}
+  908|      0|			case JsonObj::JsonBaseType::JsonArrayType: {
+  909|      0|				dumpArray((const JsonArray *)v.get(), res, depth + 1, indent, false);
+  910|      0|				break;
+  911|      0|			}
+  912|      0|			case JsonObj::JsonBaseType::JsonMapType: {
+  913|      0|				dumpMap((const JsonMap *)v.get(), res, depth + 1, indent, false);
+  914|      0|				break;
+  915|      0|			}
+  916|      0|		}
+  917|      0|		if (std::distance(it, jm->data.end()) != 1) {
+  918|      0|			res.push_back(',');
+  919|      0|		}
+  920|      0|	}
+  921|      0|	res.push_back('\n');
+  922|      0|	for (int i = 0; i < depth; ++i) {
+  923|      0|		for (int j = 0; j < indent; ++j) {
+  924|      0|			res.push_back(' ');
+  925|      0|		}
+  926|      0|	}
+  927|      0|	res.push_back('}');
+  928|      0|}
+  929|       |
+  930|       |}  // namespace co_uring_web::utils
+
+/home/zhouheng/C++/co_uring_http/src/logger.cpp:
+    1|       |#include "logger.h"
+    2|       |
+    3|       |#include <bits/types/time_t.h>
+    4|       |#include <fcntl.h>
+    5|       |#include <pthread.h>
+    6|       |#include <sys/stat.h>
+    7|       |#include <unistd.h>
+    8|       |
+    9|       |#include <atomic>
+   10|       |#include <cassert>
+   11|       |#include <cerrno>
+   12|       |#include <cstdio>
+   13|       |#include <cstdlib>
+   14|       |#include <cstring>
+   15|       |#include <filesystem>
+   16|       |#include <mutex>
+   17|       |#include <sstream>
+   18|       |#include <string>
+   19|       |#include <thread>
+   20|       |
+   21|       |#include "config.h"
+   22|       |#include "utils.h"
+   23|       |namespace co_uring_web::utils {
+   24|       |GlobalLoggerManager *GlobalLoggerManager::instance = nullptr;
+   25|       |thread_local char LoggerInfoBuilder::timeHeader[LoggerInfoBuilder::timeHeaderLength+1];
+   26|       |thread_local time_t LoggerInfoBuilder::threadTime;
+   27|       |thread_local pthread_t LoggerInfoBuilder::threadId;
+   28|       |
+   29|      0|void GlobalLoggerManager::rotate() {
+   30|      0|	using namespace std;
+   31|       |
+   32|      0|	namespace fs = filesystem;
+   33|       |
+   34|      0|	auto getNum = [&](const fs::path &p) -> int {
+   35|      0|		auto pName = p.filename().string();
+   36|      0|		if (pName != (fileName_ + '.' + outputFileExtensionName)) {
+   37|      0|			auto splited = splitToViews(pName, fileName_);
+   38|      0|			if (splited.size() == 2) {
+   39|      0|				splited = splitToViews(splited.back(), '.');
+   40|      0|				int num = -1;
+   41|      0|				try {
+   42|      0|					num = stoi(string(splited.back()));
+   43|      0|					return num;
+   44|      0|				} catch (exception &e) {
+   45|      0|					fprintf(stderr, "%s", e.what());
+   46|      0|				}
+   47|      0|			}
+   48|      0|		}
+   49|      0|		return -1;
+   50|      0|	};
+   51|      0|	vector<int> nums;
+   52|      0|	try {
+   53|      0|		for (auto &&it : fs::directory_iterator(getOutputDir())) {
+   54|      0|			auto num = getNum(it.path());
+   55|      0|			if (num > 0) nums.push_back(num);
+   56|      0|		}
+   57|      0|	} catch (exception &e) {
+   58|      0|		fprintf(stderr, "%s", e.what());
+   59|      0|	}
+   60|      0|	sort(nums.begin(), nums.end(), greater<int> {});
+   61|      0|	string oldNum, newNum;
+   62|      0|	stringstream ss;
+   63|      0|	for (int num : nums) {
+   64|      0|		oldNum=to_string(num);
+   65|      0|		newNum=to_string(num+1);
+   66|      0|		try {
+   67|      0|			fs::rename(
+   68|      0|			    outputDir_ / fs::path(fileName_ + '.' + outputFileExtensionName + '.' + oldNum),
+   69|      0|			    outputDir_ / fs::path(fileName_ + '.' + outputFileExtensionName + '.' + newNum));
+   70|      0|		} catch (const exception &e) {
+   71|      0|			fprintf(stderr, "%s", e.what());
+   72|      0|		}
+   73|      0|	}
+   74|      0|	fs::rename(outputDir_ / fs::path(fileName_ + '.' + outputFileExtensionName),
+   75|      0|	           outputDir_ / fs::path(fileName_ + '.' + outputFileExtensionName + ".1"));
+   76|      0|	int newfd =
+   77|      0|	    open(fs::path(outputDir_ / fs::path(fileName_ + '.' + outputFileExtensionName)).c_str(),
+   78|      0|	         O_CREAT | O_WRONLY,0777);
+   79|      0|	if (dup2(newfd, loggerFileFd_) == -1) {
+   80|      0|		fprintf(stderr, "%s", "dup2 error");
+   81|      0|		abort();
+   82|      0|	}
+   83|      0|}
+   84|  2.81k|GlobalLoggerManager &GlobalLoggerManager::getInstance() { return *instance; }
+   85|      1|void GlobalLoggerManager::init() {
+   86|      1|	assert(instance == nullptr);
+   87|      1|	instance = new GlobalLoggerManager();
+   88|      1|	instance->fileName_ = Config::getInstance().get_logger_file_name();
+   89|      1|	instance->outputDir_ = Config::getInstance().get_logger_output_dir();
+   90|      1|	instance->loggerFileFd_ = open((instance->outputDir_ + "/" + instance->getFileName() + "." +
+   91|      1|	                                GlobalLoggerManager::outputFileExtensionName)
+   92|      1|	                                   .c_str(),O_WRONLY|O_APPEND|O_CREAT,S_IRUSR|S_IWUSR);
+   93|      1|	if(instance->loggerFileFd_<0){
+   94|      0|		fprintf(stderr,"%s", strerror(errno));
+   95|      0|		abort();
+   96|      0|	}
+   97|      1|	if (instance->checkNeedRotate()) {
+   98|      0|		instance->rotate();
+   99|      0|	}
+  100|      1|	asm volatile("mfence" ::: "memory");
+  101|      1|	instance->loggerThread = new std::thread([]() {
+  102|    165|		while (true) {
+  103|    164|			usleep(200000);
+  104|    164|			if (GlobalLoggerManager::getInstance().checkNeedRotate()) {
+  105|      0|				GlobalLoggerManager::getInstance().rotate();
+  106|      0|			}
+  107|    164|		}
+  108|      1|	});
+  109|      1|}
+  110|    164|bool GlobalLoggerManager::checkNeedRotate() {
+  111|    164|	struct stat currentFileStat;
+  112|    164|	fstat(GlobalLoggerManager::getInstance().getLoggerFileFd(), &currentFileStat);
+  113|    164|	if(currentFileStat.st_size<=0) return false;
+  114|    164|	return (currentFileStat.st_size >= Logger::singleFileSizeLimit);
+  115|    164|}
+  116|       |}  // namespace co_uring_web::utils
+
+/home/zhouheng/C++/co_uring_http/src/timer.cpp:
+    1|       |#include "timer.h"
+    2|       |
+    3|       |#include <bits/types/timer_t.h>
+    4|       |
+    5|       |#include <cstdint>
+    6|       |
+    7|       |#include "utils.h"
+    8|       |namespace co_uring_web::core {
+    9|      0|bool TimerQueue::add(uint64_t key, uint64_t expiredTimePoint) {
+   10|      0|	if (key2timeid_.find(key) != key2timeid_.end()) return false;
+   11|      0|	uint32_t id = index_;
+   12|      0|	uint64_t timeid = expiredTimePoint << 32;
+   13|      0|	timeid |= id;
+   14|      0|	this->key2timeid_.insert({key, {(uint32_t)expiredTimePoint, id}});
+   15|      0|	this->timeid2key_.insert({timeid, key});
+   16|      0|	index_++;
+   17|      0|	return true;
+   18|      0|}
+   19|      0|bool TimerQueue::remove(uint64_t key) {
+   20|      0|	auto key2timeidIt = key2timeid_.find(key);
+   21|      0|	if (key2timeidIt == key2timeid_.end()) return false;
+   22|      0|	auto [expiredTimePoint, id] = key2timeidIt->second;
+   23|      0|	uint64_t timeid = ((uint64_t)expiredTimePoint) << 32;
+   24|      0|	timeid |= id;
+   25|      0|	auto timeid2keyIt = timeid2key_.find(timeid);
+   26|      0|	if (timeid2keyIt == timeid2key_.end()) return false;
+   27|      0|	key2timeid_.erase(key2timeidIt);
+   28|      0|	timeid2key_.erase(timeid2keyIt);
+   29|      0|	return true;
+   30|      0|}
+   31|  2.13k|void TimerQueue::popExpired(std::vector<uint64_t> &keys) {
+   32|  2.13k|	int64_t t = utils::getTimeInMilisecond();
+   33|  2.13k|	uint64_t flag = (int64_t(t)) << 32;
+   34|  2.13k|	flag |= UINT32_MAX;
+   35|  2.13k|	auto endIt = this->timeid2key_.upper_bound(flag);
+   36|  2.13k|	for (auto it = timeid2key_.begin(); it != endIt; ++it) {
+   37|      0|		keys.push_back(it->second);
+   38|      0|		this->key2timeid_.erase(it->second);
+   39|      0|	}
+   40|  2.13k|	if (endIt != timeid2key_.begin()) {
+   41|      0|		timeid2key_.erase(timeid2key_.begin(), endIt);
+   42|      0|	}
+   43|  2.13k|}
+   44|       |}  // namespace co_uring_web::core
+
+/home/zhouheng/C++/co_uring_http/src/utils.cpp:
+    1|       |#include "utils.h"
+    2|       |
+    3|       |#include <unistd.h>
+    4|       |#include <zconf.h>
+    5|       |#include <zlib.h>
+    6|       |
+    7|       |#include <cstddef>
+    8|       |#include <cstdlib>
+    9|       |#include <cstring>
+   10|       |#include <optional>
+   11|      0|void *zliballoc(void *q, unsigned n, unsigned m) { return calloc(n, m); }
+   12|      0|void zlibfree(void *q, void *p) { free(p); }
+   13|       |
+   14|       |namespace co_uring_web::utils {
+   15|       |
+   16|      0|std::string getcwdPath() {
+   17|      0|	using namespace std;
+   18|      0|	string s(256, 0);
+   19|      0|	getcwd(s.data(), 256);
+   20|      0|	s.resize(strlen(s.data()));
+   21|      0|	return s;
+   22|      0|};
+   23|       |
+   24|  2.49k|std::string addr2str(sockaddr_in addr) {
+   25|  2.49k|	std::string res(16, 0);  // 255.255.255.255
+   26|  2.49k|	int written = 0;
+   27|  12.4k|	for (int i = 0; i < sizeof(uint32_t); ++i) {
+   28|  9.96k|		uint8_t c = *(((const uint8_t *)&(addr.sin_addr.s_addr)) + i);  // NOLINT
+   29|       |
+   30|  9.96k|		written += std::snprintf(res.data() + written, res.size() - written, "%u", c);  // NOLINT
+   31|  9.96k|		res[written++] = '.';
+   32|  9.96k|	}
+   33|  2.49k|	res[written - 1] = 0;
+   34|  2.49k|	res.resize(written - 1);
+   35|  2.49k|	return res;
+   36|  2.49k|};
+   37|      0|std::string deflateCompress(std::string_view view) {
+   38|      0|	using namespace std;
+   39|      0|	z_stream zs;
+   40|      0|	int err;
+   41|      0|	uLong len = view.size();
+   42|      0|	uLong resSize = max(2 * len, 1024ul);
+   43|      0|	string res(resSize, 0);
+   44|      0|	zs.zalloc = &zliballoc;
+   45|      0|	zs.zfree = &zlibfree;
+   46|      0|	zs.opaque = nullptr;
+   47|       |
+   48|      0|	err = deflateInit(&zs, Z_DEFAULT_COMPRESSION);
+   49|      0|	if (err != Z_OK) {
+   50|      0|		return {};
+   51|      0|	}
+   52|      0|	zs.next_out = (Byte *)res.data();
+   53|      0|	zs.avail_out = resSize;
+   54|      0|	zs.next_in = (unsigned char *)view.data();
+   55|      0|	zs.avail_in = len;
+   56|       |	// err = deflate(&zs, Z_NO_FLUSH);
+   57|       |	// if (err != Z_OK) {
+   58|       |	//   return {};
+   59|       |	// }
+   60|       |
+   61|      0|	err = deflate(&zs, Z_FINISH);
+   62|      0|	if (err != Z_STREAM_END) {
+   63|      0|		return {};
+   64|      0|	}
+   65|      0|	if (zs.avail_in != 0) {
+   66|      0|		return {};
+   67|      0|	}
+   68|      0|	res.resize(zs.total_out);
+   69|      0|	err = deflateEnd(&zs);
+   70|      0|	if (err != Z_OK) {
+   71|      0|		return {};
+   72|      0|	}
+   73|      0|	return res;
+   74|      0|};
+   75|      0| std::string deflateUncompress(std::string_view view) {
+   76|      0|	using namespace std;
+   77|      0|	int err;
+   78|      0|	z_stream zs;
+   79|      0|	zs.zalloc = &zliballoc;
+   80|      0|	zs.zfree = &zlibfree;
+   81|      0|	zs.opaque = nullptr;
+   82|      0|	zs.next_in = (Byte *)view.data();
+   83|      0|	zs.avail_in = view.size();
+   84|      0|	uLong resSize = max(view.size() * 4, 1024ul);
+   85|      0|	string res(resSize, 0);
+   86|       |
+   87|      0|	zs.next_out = (Byte *)res.data();
+   88|      0|	zs.avail_out = resSize;
+   89|      0|	err = inflateInit(&zs);
+   90|      0|	if (err != Z_OK) {
+   91|      0|		return {};
+   92|      0|	}
+   93|      0|	err = inflate(&zs, Z_FINISH);
+   94|      0|	if (err != Z_STREAM_END) return {};
+   95|      0|	if (zs.avail_in != 0) return {};
+   96|       |
+   97|      0|	res.resize(zs.total_out);
+   98|      0|	err = inflateEnd(&zs);
+   99|      0|	if (err != Z_OK) {
+  100|      0|		return {};
+  101|      0|	}
+  102|      0|	return res;
+  103|      0|};
+  104|       |};  // namespace co_uring_web::utils
+
+/home/zhouheng/C++/co_uring_http/static_web_http.cpp:
+    1|       |#include "http.h"
+    2|       |#include <csignal>
+    3|       |#include <cstdlib>
+    4|       |
+    5|       |#define USING_IOURING
+    6|       |
+    7|       |#ifdef USING_EPOLL
+    8|       |using Scheduler = co_uring_web::core::EpollScheduler;
+    9|       |#elifdef USING_IOURING
+   10|       |using Scheduler = co_uring_web::core::UringScheduler;
+   11|       |#endif
+   12|       |
+   13|       |
+   14|       |using Server=typename co_uring_web::core::TcpServer<Scheduler , co_uring_web::HttpTask>;
+   15|       |
+   16|      1|void handler(int sig){
+   17|      1|    exit(sig);
+   18|      1|}
+   19|       |
+   20|      1|int main(){
+   21|      1|    signal(2,&handler);
+   22|      1|    co_uring_web::Config::init("/home/zhouheng/C++/co_uring_http/config.json");
+   23|      1|	co_uring_web::utils::GlobalLoggerManager::init();
+   24|       |
+   25|      1|    Server server(8888,1,&co_uring_web::static_web_http<Scheduler >);
+   26|      1|    server.run();
+   27|      1|}
+

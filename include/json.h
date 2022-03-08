@@ -73,7 +73,7 @@ class JsonString : public JsonObj {
 		data = std::move(s);
 		return *this;
 	}
-	JsonString(std::string s) : JsonObj(JsonBaseType::JsonStringType), data(std::move(s)) {};
+	JsonString(const std::string& s) : JsonObj(JsonBaseType::JsonStringType), data(s) {};
 	JsonString(std::string &&s) : JsonObj(JsonBaseType::JsonStringType), data(std::move(s)) {};
 
 	operator std::string() noexcept { return data; }

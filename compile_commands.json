@@ -1,0 +1,47 @@
+[
+{
+  "directory": "/home/zhouheng/C++/co_uring_http/build",
+  "command": "/bin/clang++-13  -I/home/zhouheng/C++/co_uring_http/include  -v   -stdlib=libc++ -std=c++20  -fprofile-instr-generate -fcoverage-mapping -fprofile-arcs -ftest-coverage -O3 -DNDEBUG -o CMakeFiles/static_web_http.dir/static_web_http.cpp.o -c /home/zhouheng/C++/co_uring_http/static_web_http.cpp",
+  "file": "/home/zhouheng/C++/co_uring_http/static_web_http.cpp"
+},
+{
+  "directory": "/home/zhouheng/C++/co_uring_http/build",
+  "command": "/bin/clang++-13  -I/home/zhouheng/C++/co_uring_http/include  -v   -stdlib=libc++ -std=c++20  -fprofile-instr-generate -fcoverage-mapping -fprofile-arcs -ftest-coverage -O3 -DNDEBUG -o CMakeFiles/co_uring_echo.dir/echo.cpp.o -c /home/zhouheng/C++/co_uring_http/echo.cpp",
+  "file": "/home/zhouheng/C++/co_uring_http/echo.cpp"
+},
+{
+  "directory": "/home/zhouheng/C++/co_uring_http/build/src",
+  "command": "/bin/clang++-13  -I/home/zhouheng/C++/co_uring_http/include  -v  -stdlib=libc++ -std=c++20  -fprofile-instr-generate -fcoverage-mapping -fprofile-arcs -ftest-coverage -O3 -DNDEBUG -o CMakeFiles/co_uring_srcs.dir/config.cpp.o -c /home/zhouheng/C++/co_uring_http/src/config.cpp",
+  "file": "/home/zhouheng/C++/co_uring_http/src/config.cpp"
+},
+{
+  "directory": "/home/zhouheng/C++/co_uring_http/build/src",
+  "command": "/bin/clang++-13  -I/home/zhouheng/C++/co_uring_http/include  -v  -stdlib=libc++ -std=c++20  -fprofile-instr-generate -fcoverage-mapping -fprofile-arcs -ftest-coverage -O3 -DNDEBUG -o CMakeFiles/co_uring_srcs.dir/core.cpp.o -c /home/zhouheng/C++/co_uring_http/src/core.cpp",
+  "file": "/home/zhouheng/C++/co_uring_http/src/core.cpp"
+},
+{
+  "directory": "/home/zhouheng/C++/co_uring_http/build/src",
+  "command": "/bin/clang++-13  -I/home/zhouheng/C++/co_uring_http/include  -v  -stdlib=libc++ -std=c++20  -fprofile-instr-generate -fcoverage-mapping -fprofile-arcs -ftest-coverage -O3 -DNDEBUG -o CMakeFiles/co_uring_srcs.dir/http.cpp.o -c /home/zhouheng/C++/co_uring_http/src/http.cpp",
+  "file": "/home/zhouheng/C++/co_uring_http/src/http.cpp"
+},
+{
+  "directory": "/home/zhouheng/C++/co_uring_http/build/src",
+  "command": "/bin/clang++-13  -I/home/zhouheng/C++/co_uring_http/include  -v  -stdlib=libc++ -std=c++20  -fprofile-instr-generate -fcoverage-mapping -fprofile-arcs -ftest-coverage -O3 -DNDEBUG -o CMakeFiles/co_uring_srcs.dir/json.cpp.o -c /home/zhouheng/C++/co_uring_http/src/json.cpp",
+  "file": "/home/zhouheng/C++/co_uring_http/src/json.cpp"
+},
+{
+  "directory": "/home/zhouheng/C++/co_uring_http/build/src",
+  "command": "/bin/clang++-13  -I/home/zhouheng/C++/co_uring_http/include  -v  -stdlib=libc++ -std=c++20  -fprofile-instr-generate -fcoverage-mapping -fprofile-arcs -ftest-coverage -O3 -DNDEBUG -o CMakeFiles/co_uring_srcs.dir/logger.cpp.o -c /home/zhouheng/C++/co_uring_http/src/logger.cpp",
+  "file": "/home/zhouheng/C++/co_uring_http/src/logger.cpp"
+},
+{
+  "directory": "/home/zhouheng/C++/co_uring_http/build/src",
+  "command": "/bin/clang++-13  -I/home/zhouheng/C++/co_uring_http/include  -v  -stdlib=libc++ -std=c++20  -fprofile-instr-generate -fcoverage-mapping -fprofile-arcs -ftest-coverage -O3 -DNDEBUG -o CMakeFiles/co_uring_srcs.dir/timer.cpp.o -c /home/zhouheng/C++/co_uring_http/src/timer.cpp",
+  "file": "/home/zhouheng/C++/co_uring_http/src/timer.cpp"
+},
+{
+  "directory": "/home/zhouheng/C++/co_uring_http/build/src",
+  "command": "/bin/clang++-13  -I/home/zhouheng/C++/co_uring_http/include  -v  -stdlib=libc++ -std=c++20  -fprofile-instr-generate -fcoverage-mapping -fprofile-arcs -ftest-coverage -O3 -DNDEBUG -o CMakeFiles/co_uring_srcs.dir/utils.cpp.o -c /home/zhouheng/C++/co_uring_http/src/utils.cpp",
+  "file": "/home/zhouheng/C++/co_uring_http/src/utils.cpp"
+}
+]

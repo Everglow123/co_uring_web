@@ -506,7 +506,7 @@ std::unique_ptr<JsonString> JsonParser::parseString(const std::string_view view,
 	};
 	getString();
 
-	return make_unique<JsonString>(s);
+	return make_unique<JsonString>(move(s));
 };
 std::unique_ptr<JsonBool> JsonParser::parseBool(const std::string_view view, ssize_t &startIndex) {
 	using namespace std;

@@ -33,7 +33,7 @@ class LockfreeQueue<T, true> {
 	std::atomic<uint32_t> readIndex_;
 	uint32_t capicity_;
 	T *queue_;
-	static constexpr uint32_t DefaultCapicity = 256000;
+	static constexpr uint32_t DefaultCapicity = 25600;
 	char padding[64];  //填充缓存行，防止伪共享
 
    public:
@@ -45,22 +45,22 @@ class LockfreeQueue<T, true> {
 	};
 	LockfreeQueue() : LockfreeQueue(DefaultCapicity) {};
 	bool push(const T &data) {
-		uint32_t currentWriteIndex = writeIndex_.load();
-		if (count2Index(currentWriteIndex + 1) == count2Index(readIndex_.load())) return false;
+		uint32_t currentWriteIndex = writeIndex_.load(std::memory_order_acquire);
+		if (count2Index(currentWriteIndex + 1) == count2Index(readIndex_.load(std::memory_order_acquire))) return false;
 		queue_[count2Index(currentWriteIndex)] = data;
-		writeIndex_.fetch_add(1);
+		writeIndex_.fetch_add(1,std::memory_order_release);
 		return true;
 	};
 	bool pop(T &data) {
 		uint32_t currentReadIndex;
 		do {
-			currentReadIndex = readIndex_.load();
-			if (readIndex_.load() == writeIndex_.load()) {
+			currentReadIndex = readIndex_.load(std::memory_order_acquire);
+			if (currentReadIndex  == writeIndex_.load(std::memory_order_acquire)) {
 				//说明已经空了
 				return false;
 			}
 			data = queue_[count2Index(currentReadIndex)];
-			if (readIndex_.compare_exchange_strong(currentReadIndex, currentReadIndex + 1)) {
+			if (readIndex_.compare_exchange_strong(currentReadIndex, currentReadIndex + 1,std::memory_order_acq_rel)) {
 				//假定有多个消费者，如果这个cas操作成功，那就意味着，data处必定为currentReadIndex处的数据，失败就意味着，已经被其他
 				//消费者先获取。所以currentReadIndex处的数据可能被多个线程读取，所以元素类型的赋值过程绝不能影响源数据。
 				return true;

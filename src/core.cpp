@@ -28,7 +28,7 @@
 namespace co_uring_web::core {
 UringScheduler::UringScheduler() {
 	io_uring_queue_init(UringScheduler::UringSize, &uring_, 0);
-	this->ioIndex2req_.reserve(10000);
+	this->ioIndex2req_.reserve(100000);
 }
 void UringScheduler::handleRead(IoRequest &req) {
 	assert(req.op == IoRequestOp::OP_READ);
@@ -59,12 +59,15 @@ void UringScheduler::handleWrite(IoRequest &req) {
 }
 void UringScheduler::poll(std::vector<void *> &readyHandleAddrs) {
 	struct io_uring_cqe *cqe;
-	__kernel_timespec ts = {.tv_sec = 0, .tv_nsec = UringTimeoutMiliseconds * 100};
+	__kernel_timespec ts = {.tv_sec = 0, .tv_nsec =UringTimeoutMiliseconds*1000000};
 	while (true) {
+		// io_uring_sqe *sqe=io_uring_get_sqe(&uring_);
+	
+		// io_uring_prep_timeout(sqe, &ts, 1, IORING_TIMEOUT_ABS);
+		// io_uring_submit(&uring_);
 		int ret = io_uring_wait_cqe_timeout(&uring_, &cqe, &ts);
 		if (ret < 0) {
 			if (ret == -ETIME) {
-				//超时
 				break;
 			}
 			char errBuff[64];
@@ -72,6 +75,11 @@ void UringScheduler::poll(std::vector<void *> &readyHandleAddrs) {
 			          << strerror_r(-ret, errBuff, 64);
 			break;
 		}
+		if(cqe->user_data==0){
+			io_uring_cqe_seen(&uring_, cqe);
+			break;
+		}
+
 		uint64_t id = cqe->user_data;
 		auto it = this->ioIndex2req_.find(id);
 		if (it == ioIndex2req_.end()) continue;  //说明之前已经被删除了
@@ -82,20 +90,24 @@ void UringScheduler::poll(std::vector<void *> &readyHandleAddrs) {
 		readyHandleAddrs.push_back(handleAddr);
 
 		this->ioIndex2req_.erase(it);
-		this->timerQueue_.remove(id);
+		if (req->timeout > 0) {
+			this->timerQueue_.remove(id);
+		}
+		
+		
 	}
-
 	std::vector<uint64_t> expireds;
-	this->timerQueue_.popExpired(expireds);
-	for (auto key : expireds) {
-		//处理过期的请求
-		auto it = this->ioIndex2req_.find(key);
-		if (it == this->ioIndex2req_.end()) continue;
-		auto *req = (IoRequest *)it->second;
-		req->retCode = -1;
-		readyHandleAddrs.push_back(req->context);
-		this->ioIndex2req_.erase(it);
-	}
+		this->timerQueue_.popExpired(expireds);
+		for (auto key : expireds) {
+			//处理过期的请求
+			auto it = this->ioIndex2req_.find(key);
+			if (it == this->ioIndex2req_.end()) continue;
+			auto *req = (IoRequest *)it->second;
+			req->retCode = -1;
+			readyHandleAddrs.push_back(req->context);
+			this->ioIndex2req_.erase(it);
+		}
+		return;
 }
 EpollScheduler::EpollScheduler() {
 	using namespace std::string_view_literals;
@@ -124,7 +136,7 @@ void EpollScheduler::handleRead(IoRequest &req) {
 		epoll_event event {0};
 		event.events = EPOLLIN | EPOLLET;
 		uint64_t id = ioIndex_++;
-		event.data.u64=id;
+		event.data.u64 = id;
 		this->ioIndex2req_.insert({id, &req});
 		int ret = epoll_ctl(epollfd_, EPOLL_CTL_ADD, req.fd, &event);
 
@@ -137,8 +149,7 @@ void EpollScheduler::handleRead(IoRequest &req) {
 			completedHandleAddrs_.push_back(req.context);
 			return;
 		}
-		
-		
+
 		if (req.timeout > 0)  //不能一次性读完，且需要定时器的情况
 			this->timerQueue_.add(id, utils::getTimeInMilisecond() + req.timeout);
 		// uncompletedReqs.push_back(&req);
@@ -252,7 +263,7 @@ void EpollScheduler::poll(std::vector<void *> &readyHandleAddrs) {
 				          << strerror_r(err, errBuff, 64);
 			}
 			this->ioIndex2req_.erase(it);
-			this->timerQueue_.remove(id);
+			if (req->timeout > 0) this->timerQueue_.remove(id);
 			completedHandleAddrs_.push_back(req->context);
 		} else if (event.events & EPOLLOUT) {
 			//需要epoll_del的情况 ret==0 ret<0 (ret+req->retCode==req->size)
@@ -283,7 +294,9 @@ void EpollScheduler::poll(std::vector<void *> &readyHandleAddrs) {
 				req->retCode += ret;  //全部写完
 			}
 			this->ioIndex2req_.erase(it);
-			this->timerQueue_.remove(id);
+			if (req->timeout > 0) {
+				this->timerQueue_.remove(id);
+			}
 			completedHandleAddrs_.push_back(req->context);
 			ret = epoll_ctl(epollfd_, EPOLL_CTL_DEL, req->fd, nullptr);
 			if (ret < 0) {

@@ -276,7 +276,7 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 	req.data = reqBuff.get();
 	req.capicaty = defaultHttpRequestReadBufferSize;
 	req.fd = conn.fd;
-
+	req.timeout=0;
 	co_await scheduler->asyncRead(&req);
 	if (req.retCode <= 0) {
 		LOG_WARN << "http 读异常,来自 " << utils::addr2str(conn.remoteAddr) << ':'
@@ -304,10 +304,11 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 
 		LOG_INFO << "http打开文件路径失败: " << url << " " << strerror_r(err, errBuff, 64);
 
-		IoRequest req;
+		IoRequest req={};
 		req.fd = conn.fd;
 		req.data = (char *)content404;
 		req.size = sizeof(content404);
+		req.timeout=0;
 		co_await scheduler->asyncWrite(&req);
 		close(conn.fd);
 		co_return;
@@ -320,10 +321,11 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 		close(fd);
 		LOG_INFO << "http打开文件路径失败: " << url << " " << strerror_r(err, errBuff, 64);
 
-		IoRequest req;
+		IoRequest req={};
 		req.fd = conn.fd;
 		req.data = (char *)content404;
 		req.size = sizeof(content404);
+		req.timeout=0;
 		co_await scheduler->asyncWrite(&req);
 		close(conn.fd);
 		co_return;
@@ -357,6 +359,7 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 		req.fd = conn.fd;
 		req.data = (char *)content404;
 		req.size = sizeof(content404);
+		req.timeout=0;
 		co_await scheduler->asyncWrite(&req);
 		close(conn.fd);
 		co_return;
@@ -368,7 +371,7 @@ static HttpTask static_web_http(core::TcpConnection conn, HttpScheduler<Schedule
 	req.fd = conn.fd;
 	req.data = res.get();
 	req.size = headersSize + fileSize;
-
+	req.timeout=0;
 	co_await scheduler->asyncWrite(&req);
 	close(conn.fd);
 	co_return;
